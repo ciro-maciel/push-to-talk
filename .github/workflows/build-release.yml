@@ -43,6 +43,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # Sync package.json version with semantic-release
+      - name: Update package.json version
+        shell: bash
+        run: |
+          VERSION="${{ needs.release.outputs.new_release_version }}"
+          echo "Updating package.json to version $VERSION"
+          # Use node to update package.json
+          node -e "const pkg = require('./package.json'); pkg.version = '$VERSION'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');"
+          cat package.json | grep version
 
       - uses: actions/setup-node@v4
         with:
@@ -109,5 +122,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          EP_PRE_RELEASE: false
         run: |
           npm exec electron-builder -- --publish always
