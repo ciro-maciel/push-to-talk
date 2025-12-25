@@ -8,8 +8,11 @@ on:
 permissions:
   contents: write
 
+env:
+  WHISPER_VERSION: "1.7.4"
+
 jobs:
-  # JOBS 1: Determina a versão e cria a Release (apenas se houver mudanças relevantes)
+  # JOB 1: Determina a versão e cria a Release
   release:
     runs-on: ubuntu-latest
     outputs:
@@ -31,7 +34,7 @@ jobs:
             @semantic-release/changelog
             @semantic-release/git
 
-  # JOB 2: Build Multi-Plataforma (Roda apenas se uma nova versão for criada)
+  # JOB 2: Build Multi-Plataforma
   build:
     needs: release
     if: needs.release.outputs.new_release_published == 'true'
@@ -39,7 +42,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          - os: macos-latest
+            whisper_zip: whisper-v1.7.4-bin-arm64.zip
+            whisper_cli: whisper-cli
+          - os: ubuntu-latest
+            whisper_zip: whisper-v1.7.4-bin-x64.zip
+            whisper_cli: whisper-cli
+          - os: windows-latest
+            whisper_zip: whisper-v1.7.4-bin-x64.zip
+            whisper_cli: whisper-cli.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -53,48 +65,35 @@ jobs:
         with:
           bun-version: latest
 
-      # Linux: Install system dependencies for uiohook-napi and electron
+      # Linux: Install system dependencies
       - name: Install Linux Dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxtst-dev libxinerama-dev libxkbcommon-dev libxkbcommon-x11-dev libasound2-dev
 
-      # --- Compilação do Whisper.cpp (Nativo por OS) ---
-
-      - name: Clone whisper.cpp
-        run: git clone https://github.com/ggerganov/whisper.cpp.git
-
-      - name: Download Model (Small)
+      # Download pre-built whisper.cpp binary (MUCH faster than compiling)
+      - name: Download Whisper Binary
         shell: bash
         run: |
-          cd whisper.cpp/models
-          ./download-ggml-model.sh small
+          mkdir -p whisper.cpp/build/bin
+          mkdir -p whisper.cpp/models
 
-      # Compilação Mac/Linux
-      - name: Build Whisper (Unix)
-        if: matrix.os != 'windows-latest'
-        run: |
-          cd whisper.cpp
-          make
+          # Download pre-built binary
+          curl -L -o whisper.zip "https://github.com/ggerganov/whisper.cpp/releases/download/v1.7.4/${{ matrix.whisper_zip }}"
+          unzip whisper.zip -d whisper-temp
+          cp whisper-temp/${{ matrix.whisper_cli }} whisper.cpp/build/bin/
+          chmod +x whisper.cpp/build/bin/${{ matrix.whisper_cli }} || true
+          rm -rf whisper.zip whisper-temp
 
-      # Compilação Windows (Usando CMake que é mais seguro no CI Windows)
-      - name: Build Whisper (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          cd whisper.cpp
-          cmake -B build
-          cmake --build build --config Release
-          # Move o executável para onde o electron-builder espera
-          mkdir -p build/bin
-          cp build/bin/Release/main.exe build/bin/whisper-cli.exe
+          # Download model
+          curl -L -o whisper.cpp/models/ggml-small.bin "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
 
-      # --- Instalação e Build do Electron ---
+      # --- Electron Build ---
 
       - name: Install Dependencies
         run: bun install
 
-      # Fix for Python 3.12+ removing distutils (needed by node-gyp)
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -103,14 +102,12 @@ jobs:
       - name: Install setuptools (for node-gyp)
         run: pip install setuptools
 
-      # Recompila dependências nativas do Node (como uiohook-napi)
       - name: Rebuild Native Deps
         run: npm rebuild --build-from-source
 
       - name: Build & Publish Electron App
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Necessário para evitar erro de assinatura no Mac se não tiver certificado pago
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: |
           npm exec electron-builder -- --publish always
