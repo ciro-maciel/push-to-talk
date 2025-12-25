@@ -9,6 +9,7 @@ const statusMessage = document.getElementById("status-message");
 // New Shortcut UI Elements
 const shortcutBtn = document.getElementById("shortcut-trigger");
 const currentKeysDisplay = document.getElementById("current-keys");
+const controlsHelper = document.querySelector(".controls-helper");
 const recordingText = document.getElementById("recording-text");
 // const triggerModeSelect = document.getElementById("trigger-mode-select"); // Removed
 
@@ -40,6 +41,9 @@ async function init() {
 
   if (config.triggerMode) {
     updateSegmentUI(config.triggerMode);
+  } else {
+    // Default to hybrid if not set
+    updateSegmentUI("hybrid");
   }
 
   setStatus("ready", `Pronto! Pressione o atalho para gravar`);
@@ -55,6 +59,19 @@ function updateSegmentUI(activeMode) {
       btn.classList.remove("active");
     }
   });
+  updateHelperText(activeMode);
+}
+
+function updateHelperText(mode) {
+  if (!controlsHelper) return;
+
+  const instructions = {
+    hybrid: "Toque para gravar • Segure para falar",
+    toggle: "Toque para iniciar • Toque novamente para parar",
+    hold: "Segure o atalho pressionado para gravar",
+  };
+
+  controlsHelper.textContent = instructions[mode] || instructions.hybrid;
 }
 
 // Event listener for segments
