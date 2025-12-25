@@ -69,16 +69,17 @@
         <p id="status-message">Carregando...</p>
       </div>
 
-      <div class="hotkey-display">
-        <span class="label">Atalho:</span>
-        <button id="hotkey-btn" class="hotkey-btn" title="Clique para alterar o atalho">
-          <span id="hotkey">⌘⇧Space</span>
+      <div class="shortcut-container">
+        <label class="shortcut-label">Atalho de Captura</label>
+        <button id="shortcut-trigger" class="shortcut-input-button" title="Clique para alterar">
+          <div class="shortcut-content">
+            <span id="current-keys" class="keys">⌘⇧Space</span>
+            <span id="recording-text" class="recording-text hidden">Pressione o novo atalho...</span>
+          </div>
+          <div class="shortcut-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M6 12h.001"/><path d="M10 12h.001"/><path d="M14 12h.001"/><path d="M18 12h.001"/><path d="M7 16h10"/></svg>
+          </div>
         </button>
-      </div>
-
-      <div id="hotkey-recording" class="hotkey-recording hidden">
-        <p>Pressione a nova combinação de teclas...</p>
-        <button id="cancel-hotkey" class="cancel-btn">Cancelar</button>
       </div>
 
       <div id="transcription-container" class="transcription-container hidden">
@@ -103,7 +104,7 @@
             Copiar
           </button>
         </div>
-        <div id="logs-container" class="logs-container hidden">
+        <div id="logs-container" class="logs-container">
           <div id="debug-log-list" class="debug-log-list"></div>
         </div>
       </div>

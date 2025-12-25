@@ -22,8 +22,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import permissions from "electron-mac-permissions";
+import Store from "electron-store";
 const { getAuthStatus, askForMicrophoneAccess, askForAccessibilityAccess } =
   permissions;
+
+const store = new Store();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -252,9 +255,18 @@ function updateTrayIcon(recording) {
 // ============================================================================
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const defaultBounds = {
     width: 600,
     height: 700,
+  };
+
+  const bounds = store.get("windowBounds", defaultBounds);
+
+  mainWindow = new BrowserWindow({
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     resizable: true,
     maximizable: true,
     fullscreenable: false,
@@ -268,6 +280,16 @@ function createWindow() {
       devTools: true,
     },
   });
+
+  // Save window state on resize and move
+  const saveState = () => {
+    if (!mainWindow) return;
+    const bounds = mainWindow.getBounds();
+    store.set("windowBounds", bounds);
+  };
+
+  mainWindow.on("resize", saveState);
+  mainWindow.on("move", saveState);
 
   mainWindow.loadFile(path.join(__dirname, "index.html"));
 

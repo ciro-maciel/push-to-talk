@@ -5,10 +5,12 @@
 
 const statusIndicator = document.getElementById("status-indicator");
 const statusMessage = document.getElementById("status-message");
-const hotkeyBtn = document.getElementById("hotkey-btn");
-const hotkeyDisplay = document.getElementById("hotkey");
-const hotkeyRecording = document.getElementById("hotkey-recording");
-const cancelHotkeyBtn = document.getElementById("cancel-hotkey");
+
+// New Shortcut UI Elements
+const shortcutBtn = document.getElementById("shortcut-trigger");
+const currentKeysDisplay = document.getElementById("current-keys");
+const recordingText = document.getElementById("recording-text");
+
 const copyLogBtn = document.getElementById("copy-log-btn");
 const transcriptionContainer = document.getElementById(
   "transcription-container"
@@ -35,6 +37,7 @@ async function init() {
   currentHotkey = config.hotkey;
   updateHotkeyDisplay(config.hotkey);
   setStatus("ready", `Pronto! Pressione o atalho para gravar`);
+  log("Push to Talk iniciado e pronto.");
 }
 
 async function checkAndShowPermissions() {
@@ -96,6 +99,12 @@ if (logsHeader) {
     // Prevent toggle when clicking copy button
     if (e.target.closest("#copy-log-btn")) return;
     logsWrapper.classList.toggle("expanded");
+    // Auto-scroll to bottom when opening
+    if (logsWrapper.classList.contains("expanded") && logsList) {
+      setTimeout(() => {
+        logsList.scrollTop = logsList.scrollHeight;
+      }, 300); // Wait for transition
+    }
   });
 }
 
@@ -128,7 +137,7 @@ function updateHotkeyDisplay(hotkey) {
     .replace("Alt", "⌥")
     .replace("Option", "⌥")
     .replace(/\+/g, "");
-  hotkeyDisplay.textContent = displayHotkey;
+  currentKeysDisplay.textContent = displayHotkey;
 }
 
 function setStatus(state, message) {
@@ -376,16 +385,17 @@ function writeString(view, offset, string) {
 // Hotkey recording logic
 function startRecordingHotkey() {
   isRecordingHotkey = true;
-  hotkeyBtn.classList.add("recording");
-  hotkeyRecording.classList.remove("hidden");
-  hotkeyDisplay.textContent = "...";
+  shortcutBtn.classList.add("recording");
+  currentKeysDisplay.classList.add("hidden");
+  recordingText.classList.remove("hidden");
   window.api.setRecordingHotkey(true);
 }
 
 function stopRecordingHotkey() {
   isRecordingHotkey = false;
-  hotkeyBtn.classList.remove("recording");
-  hotkeyRecording.classList.add("hidden");
+  shortcutBtn.classList.remove("recording");
+  currentKeysDisplay.classList.remove("hidden");
+  recordingText.classList.add("hidden");
   updateHotkeyDisplay(currentHotkey);
   window.api.setRecordingHotkey(false);
 }
@@ -418,11 +428,16 @@ function buildHotkeyString(event) {
   return parts.join("+");
 }
 
-hotkeyBtn.addEventListener("click", () => {
-  if (!isRecordingHotkey) startRecordingHotkey();
+shortcutBtn.addEventListener("click", () => {
+  if (isRecordingHotkey) {
+    stopRecordingHotkey(); // Allow click to cancel
+  } else {
+    startRecordingHotkey();
+  }
 });
 
-cancelHotkeyBtn.addEventListener("click", stopRecordingHotkey);
+// Click outside or explicit cancel logic could be added here if needed,
+// but re-clicking the button acts as toggle/cancel.
 
 document.addEventListener("keydown", async (event) => {
   if (!isRecordingHotkey) return;
