@@ -358,6 +358,48 @@ h1 {
   -webkit-app-region: no-drag; /* Allow clicking on links */
 }
 
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.footer-link:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.footer-link strong {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.footer-link:hover strong {
+  color: var(--text-primary);
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 0 1px var(--border-subtle);
+  transition: all 0.2s ease;
+}
+
+.footer-link:hover .avatar {
+  box-shadow: 0 0 0 2px var(--accent-focus);
+  transform: scale(1.05);
+}
+
 /* Helper Classes */
 .hidden {
   display: none !important;

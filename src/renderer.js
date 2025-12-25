@@ -33,7 +33,12 @@ let currentHotkey = "";
 
 // Initialize
 async function init() {
-  await checkAndShowPermissions();
+  const permissions = await checkAndShowPermissions();
+
+  // Warm up microphone for instant recording (if permissions granted)
+  if (permissions.microphone) {
+    await warmUpMicrophone();
+  }
 
   const config = await window.api.getConfig();
   currentHotkey = config.hotkey;
@@ -185,14 +190,17 @@ if (copyLogBtn) {
 }
 
 function updateHotkeyDisplay(hotkey) {
+  if (!hotkey) return; // Guard against null/empty
   let displayHotkey = hotkey
     .replace("CommandOrControl", "⌘")
     .replace("Command", "⌘")
     .replace("Control", "⌃")
+    .replace("Ctrl", "⌃")
     .replace("Shift", "⇧")
     .replace("Alt", "⌥")
     .replace("Option", "⌥")
-    .replace(/\+/g, "");
+    .replace(/\+/g, " ") // Use space separator for cleaner look
+    .trim();
   currentKeysDisplay.textContent = displayHotkey;
 }
 
@@ -203,20 +211,25 @@ function setStatus(state, message) {
 
 // ============================================================================
 // AUDIO RECORDING (Web Audio API - Raw PCM to WAV)
+// PRÉ-AQUECIMENTO: Microfone mantido ativo para gravação instantânea
 // ============================================================================
 
 let audioContext = null;
 let mediaStreamSource = null;
 let scriptProcessor = null;
 let audioBuffers = [];
+let isRecording = false; // Flag to control when to actually save audio
+let warmStream = null; // Keep stream reference for cleanup
+let highPassFilter = null;
+let compressor = null;
+let gainNode = null;
 
-async function startAudioRecording() {
+// Initialize microphone once at startup (warm it up)
+async function warmUpMicrophone() {
   try {
     // List devices first to pick a specific one (avoiding 'default' which can be buggy)
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioInputs = devices.filter((d) => d.kind === "audioinput");
-    // log(`🎤 Dispositivos encontrados: ${audioInputs.length}`);
-    // audioInputs.forEach((d) => log(` - ${d.label} (${d.deviceId})`));
 
     // Prefer a non-default device if available
     let selectedDeviceId = "default";
@@ -226,106 +239,114 @@ async function startAudioRecording() {
 
     if (specificMic) {
       selectedDeviceId = specificMic.deviceId;
-      log(`🎯 Selecionando dispositivo específico: ${specificMic.label}`);
-    } else {
-      log("⚠️ Usando dispositivo 'default' (nenhum específico encontrado)");
+      log(`🎯 Microfone selecionado: ${specificMic.label}`);
     }
 
     // Request microphone access with specific device
-    const audioStream = await navigator.mediaDevices.getUserMedia({
+    // MELHORIA 1: Ativar filtros nativos do navegador para redução de ruído
+    warmStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         deviceId: { exact: selectedDeviceId },
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
+        echoCancellation: false, // Mantém desativado (não é chamada de voz)
+        noiseSuppression: true, // Ativa redução de ruído nativa
+        autoGainControl: true, // Ativa controle automático de ganho
         channelCount: 1,
       },
     });
 
-    const track = audioStream.getAudioTracks()[0];
-    log(`🎤 Stream ativo: ${track.label} (ReadyState: ${track.readyState})`);
+    const track = warmStream.getAudioTracks()[0];
+    log(`🔥 Microfone pré-aquecido: ${track.label}`);
 
     // Initialize AudioContext
     audioContext = new (window.AudioContext || window.webkitAudioContext)({
-      sampleRate: 16000, // Try to request 16k directly to avoid resampling issues
+      sampleRate: 16000,
     });
 
     // Ensure context is running
     if (audioContext.state === "suspended") {
-      log("⚠️ AudioContext suspenso, forçando resume...");
       await audioContext.resume();
     }
-    log(
-      `🔊 AudioContext State: ${audioContext.state} | Rate: ${audioContext.sampleRate}`
-    );
 
     // Create MediaStreamSource
-    mediaStreamSource = audioContext.createMediaStreamSource(audioStream);
+    mediaStreamSource = audioContext.createMediaStreamSource(warmStream);
+
+    // MELHORIA 2: Filtros customizados com Web Audio API
+    // Filtro passa-alta para remover ruído de baixa frequência (hum de 60Hz, chiado)
+    highPassFilter = audioContext.createBiquadFilter();
+    highPassFilter.type = "highpass";
+    highPassFilter.frequency.value = 80;
+    highPassFilter.Q.value = 0.7;
+
+    // Compressor dinâmico para normalizar volume e reduzir picos
+    compressor = audioContext.createDynamicsCompressor();
+    compressor.threshold.value = -24;
+    compressor.knee.value = 12;
+    compressor.ratio.value = 4;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+
+    // MELHORIA 3: Ganho para amplificar o sinal
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = 1.5;
 
     // Create ScriptProcessor (bufferSize, inputChannels, outputChannels)
     scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
 
-    audioBuffers = []; // Reset buffers
-
     scriptProcessor.onaudioprocess = (event) => {
+      // Only save audio when actively recording
+      if (!isRecording) return;
+
       const inputBuffer = event.inputBuffer;
       const inputData = inputBuffer.getChannelData(0);
 
-      // Calculate RMS (Volume) for debug
-      let sum = 0;
-      for (let i = 0; i < inputData.length; i++) {
-        sum += inputData[i] * inputData[i];
-      }
-      const rms = Math.sqrt(sum / inputData.length);
-
-      // Only log if silence (or every N chunks to avoid spam)
-      if (audioBuffers.length % 20 === 0) {
-        // log(`📊 Volume atual (RMS): ${rms.toFixed(4)}`);
-      }
-
       // Clone the data because inputBuffer is reused
       const bufferCopy = new Float32Array(inputData);
-
       audioBuffers.push(bufferCopy);
     };
 
-    // Connect the graph
-    mediaStreamSource.connect(scriptProcessor);
+    // Connect the audio processing chain:
+    // Source -> HighPass -> Compressor -> Gain -> ScriptProcessor -> Destination
+    mediaStreamSource.connect(highPassFilter);
+    highPassFilter.connect(compressor);
+    compressor.connect(gainNode);
+    gainNode.connect(scriptProcessor);
     scriptProcessor.connect(audioContext.destination);
 
-    console.log(
-      `🎤 Recording started (Sample Rate: ${audioContext.sampleRate}Hz)`
-    );
+    log(`✅ Microfone pronto para gravação instantânea!`);
     return true;
   } catch (err) {
-    console.error("Failed to start recording:", err);
-    setStatus("error", "Erro ao acessar microfone. Verifique permissões.");
+    console.error("Failed to warm up microphone:", err);
+    log("❌ Erro ao pré-aquecer microfone", "error");
     return false;
   }
 }
 
+// Start recording - now instant because mic is already warm
+async function startAudioRecording() {
+  // If not warmed up yet, do it now (fallback)
+  if (!audioContext || audioContext.state === "closed") {
+    await warmUpMicrophone();
+  }
+
+  // Resume context if suspended
+  if (audioContext && audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+
+  // Reset buffers and start recording
+  audioBuffers = [];
+  isRecording = true;
+
+  console.log(`🎤 Recording started (instant)`);
+  return true;
+}
+
 async function stopAudioRecording() {
   return new Promise(async (resolve) => {
-    if (!audioContext || audioContext.state === "closed") {
-      resolve(null);
-      return;
-    }
+    // Stop recording immediately
+    isRecording = false;
 
     console.log("⏹️ Recording stopped");
-
-    // Stop recording
-    if (scriptProcessor) {
-      scriptProcessor.disconnect();
-      mediaStreamSource.disconnect();
-      scriptProcessor.onaudioprocess = null;
-    }
-
-    // Stop tracks
-    if (mediaStreamSource && mediaStreamSource.mediaStream) {
-      mediaStreamSource.mediaStream
-        .getTracks()
-        .forEach((track) => track.stop());
-    }
 
     // Process audio
     if (audioBuffers.length === 0) {
@@ -348,7 +369,7 @@ async function stopAudioRecording() {
       sum += resultBuffer[i] * resultBuffer[i];
     }
     const avgRms = Math.sqrt(sum / resultBuffer.length);
-    log(`📊 Volume Médio da Gravação: ${avgRms.toFixed(6)}`);
+    log(`📊 Volume Médio: ${avgRms.toFixed(4)}`);
 
     if (avgRms < 0.001) {
       log("⚠️ ALERTA: Áudio praticamente silêncio absoluto!");
@@ -365,11 +386,8 @@ async function stopAudioRecording() {
     // Encode to WAV (16-bit Mono)
     const wavBuffer = encodeWAV(downsampledBuffer, targetSampleRate);
 
-    // Close context
-    await audioContext.close();
-    audioContext = null;
-    scriptProcessor = null;
-    mediaStreamSource = null;
+    // Keep context warm for next recording (don't close it)
+    audioBuffers = [];
 
     resolve(wavBuffer);
   });
@@ -440,10 +458,15 @@ function writeString(view, offset, string) {
 
 // Hotkey recording logic
 function startRecordingHotkey() {
+  if (isRecordingHotkey) return;
   isRecordingHotkey = true;
   shortcutBtn.classList.add("recording");
+
+  // Clear previous and show waiting state
   currentKeysDisplay.classList.add("hidden");
+  recordingText.textContent = "Digite o atalho...";
   recordingText.classList.remove("hidden");
+
   window.api.setRecordingHotkey(true);
 }
 
@@ -452,74 +475,143 @@ function stopRecordingHotkey() {
   shortcutBtn.classList.remove("recording");
   currentKeysDisplay.classList.remove("hidden");
   recordingText.classList.add("hidden");
+  // Ensure we restore the display if cancelled without saving could be handled,
+  // but usually we just update to whatever currentHotkey is.
   updateHotkeyDisplay(currentHotkey);
   window.api.setRecordingHotkey(false);
 }
 
-function buildHotkeyString(event) {
+// Helper to get display string for current event state
+function getEventDisplayString(event) {
   const parts = [];
-  if (event.metaKey) parts.push("CommandOrControl");
-  else if (event.ctrlKey) parts.push("Control");
-  if (event.shiftKey) parts.push("Shift");
-  if (event.altKey) parts.push("Alt");
+  // Standard Mac sequence: Control, Option, Shift, Command
+  if (event.ctrlKey) parts.push("⌃");
+  if (event.altKey) parts.push("⌥");
+  if (event.shiftKey) parts.push("⇧");
+  if (event.metaKey) parts.push("⌘");
 
   const key = event.key;
   const code = event.code;
 
+  // Don't duplicate modifiers in the "key" part
+  if (!["Meta", "Control", "Shift", "Alt", "Ctrl", "Command"].includes(key)) {
+    let keyName = key.toUpperCase();
+    // Normalizing common keys
+    if (code === "Space") keyName = "Space";
+    else if (key === " ") keyName = "Space";
+    else if (code.startsWith("Key")) keyName = code.replace("Key", "");
+    else if (code.startsWith("Digit")) keyName = code.replace("Digit", "");
+
+    parts.push(keyName);
+  }
+
+  return parts.join(" ");
+}
+
+// Helper to get Electron Accelerator string
+function buildAcceleratorString(event) {
+  const parts = [];
+  if (event.metaKey) parts.push("CommandOrControl");
+  if (event.ctrlKey) parts.push("Control");
+  if (event.altKey) parts.push("Alt");
+  if (event.shiftKey) parts.push("Shift");
+
+  const key = event.key;
+  const code = event.code;
+
+  // Ignore if only modifier is pressed for the "final" check
   if (["Meta", "Control", "Shift", "Alt", "Ctrl", "Command"].includes(key))
     return null;
 
   let keyName = key;
   if (code.startsWith("Key")) keyName = code.replace("Key", "");
   else if (code.startsWith("Digit")) keyName = code.replace("Digit", "");
-  else if (code === "Space") keyName = "Space";
+  else if (code === "Space" || key === " ") keyName = "Space";
   else if (code.startsWith("F") && code.length <= 3) keyName = code;
-  else if (key === " ") keyName = "Space";
+  else if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key))
+    keyName = key;
   else keyName = key.toUpperCase();
 
   parts.push(keyName);
 
-  if (parts.length < 2 && !keyName.startsWith("F")) return null;
+  // Requirement: At least one modifier OR it's a Function/Special key
+  // But user asked for flexibility. Electron generally requires Modifier+Key for global shortcuts
+  // unless it's like F1-F12 or Media keys.
+  const hasModifier = parts.length > 1; // key is 1, so >1 means modifiers exist
+  const isFunctionKey = keyName.startsWith("F") && keyName.length > 1;
+  const isSpecial = [
+    "MediaPlayPause",
+    "MediaNextTrack",
+    "MediaPreviousTrack",
+  ].includes(keyName);
+
+  if (!hasModifier && !isFunctionKey && !isSpecial) return null;
 
   return parts.join("+");
 }
 
 shortcutBtn.addEventListener("click", () => {
   if (isRecordingHotkey) {
-    stopRecordingHotkey(); // Allow click to cancel
+    stopRecordingHotkey();
   } else {
     startRecordingHotkey();
   }
 });
 
-// Click outside or explicit cancel logic could be added here if needed,
-// but re-clicking the button acts as toggle/cancel.
-
+// Capture keys for visualization and saving
 document.addEventListener("keydown", async (event) => {
   if (!isRecordingHotkey) return;
   event.preventDefault();
   event.stopPropagation();
 
+  // Cancel on Escape
   if (event.key === "Escape") {
     stopRecordingHotkey();
     return;
   }
 
-  const hotkey = buildHotkeyString(event);
-  if (hotkey) {
-    currentHotkey = hotkey;
-    updateHotkeyDisplay(hotkey);
-    const success = await window.api.setHotkey(hotkey);
-    if (success) {
-      setStatus("ready", "Atalho atualizado!");
-      setTimeout(
-        () => setStatus("ready", "Pronto! Pressione o atalho para gravar"),
-        2000
-      );
-    } else {
-      setStatus("error", "Falha ao registrar atalho");
-    }
-    stopRecordingHotkey();
+  // Live visual update
+  const displayStr = getEventDisplayString(event);
+  if (displayStr) {
+    recordingText.textContent = displayStr;
+  }
+
+  // Try to build valid accelerator
+  const accelerator = buildAcceleratorString(event);
+  if (accelerator) {
+    // Valid shortcut detected
+    currentHotkey = accelerator;
+    updateHotkeyDisplay(accelerator);
+
+    // Slight delay to let user see the full combo before closing
+    setTimeout(async () => {
+      const success = await window.api.setHotkey(accelerator);
+      if (success) {
+        setStatus("ready", "Atalho atualizado!");
+        setTimeout(
+          () => setStatus("ready", "Pronto! Pressione o atalho para gravar"),
+          2000
+        );
+      } else {
+        setStatus("error", "Falha ao registrar atalho");
+      }
+      stopRecordingHotkey();
+    }, 150); // Small 150ms buffer for UX
+  }
+});
+
+// Handle keyup to update display if user releases a key (e.g. keeps Command held but releases Shift)
+document.addEventListener("keyup", (event) => {
+  if (!isRecordingHotkey) return;
+  event.preventDefault();
+  event.stopPropagation();
+
+  // Update display on release too, so if they let go of a key it reflects what's still held
+  const displayStr = getEventDisplayString(event);
+  if (displayStr) {
+    recordingText.textContent = displayStr;
+  } else {
+    recordingText.textContent = "Digite o atalho...";
   }
 });
 
@@ -672,6 +764,15 @@ if (playAudioBtn) {
     } else {
       log("❌ Sem áudio buffer para reproduzir");
     }
+  });
+}
+
+// Footer link - open in external browser
+const footerLink = document.querySelector(".footer-link");
+if (footerLink) {
+  footerLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    window.api.openExternal(footerLink.href);
   });
 }
 

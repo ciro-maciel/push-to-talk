@@ -831,6 +831,10 @@ ipcMain.handle("open-settings", (event, pane) => {
   openSystemPreferences(pane);
 });
 
+ipcMain.handle("open-external", (event, url) => {
+  shell.openExternal(url);
+});
+
 // ============================================================================
 // APP LIFECYCLE
 // ============================================================================

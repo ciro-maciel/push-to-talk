@@ -6,6 +6,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
+  // Open external link in default browser
+  openExternal: (url) => ipcRenderer.invoke("open-external", url),
   // Get configuration
   getConfig: () => ipcRenderer.invoke("get-config"),
   copyToClipboard: (text) => ipcRenderer.invoke("copy-to-clipboard", text),
