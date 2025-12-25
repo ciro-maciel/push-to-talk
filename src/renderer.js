@@ -517,8 +517,6 @@ function writeString(view, offset, string) {
   }
 }
 
-const clearShortcutBtn = document.getElementById("clear-shortcut-btn");
-
 // State for modifiers
 const heldModifiers = new Set();
 let pendingHotkey = null;
@@ -644,7 +642,6 @@ function buildAcceleratorString(event) {
   parts.push(keyName);
   return parts.join("+");
 }
-const confirmShortcutBtn = document.getElementById("confirm-shortcut-btn");
 
 // Hotkey recording logic
 function startRecordingHotkey() {
@@ -657,9 +654,15 @@ function startRecordingHotkey() {
   recordingText.textContent = "Digite o atalho...";
   recordingText.classList.remove("hidden");
 
-  // Toggle buttons: Show Check, Hide X
-  if (confirmShortcutBtn) confirmShortcutBtn.classList.remove("hidden");
-  if (clearShortcutBtn) clearShortcutBtn.classList.add("hidden");
+  // Toggle buttons: Show Confirm (OK), Hide Clear (X)
+  const confirmBtn = document.getElementById("confirm-shortcut-btn");
+  const clearBtn = document.getElementById("clear-shortcut-btn");
+  if (confirmBtn) confirmBtn.classList.remove("hidden");
+  if (clearBtn) clearBtn.classList.add("hidden");
+
+  // Reset pending
+  pendingHotkey = null;
+  heldModifiers.clear();
 
   window.api.setRecordingHotkey(true);
 }
@@ -673,21 +676,13 @@ function stopRecordingHotkey(save = true) {
   recordingText.classList.add("hidden");
 
   // Hide Confirm Button
-  if (confirmShortcutBtn) confirmShortcutBtn.classList.add("hidden");
+  const confirmBtn = document.getElementById("confirm-shortcut-btn");
+  if (confirmBtn) confirmBtn.classList.add("hidden");
 
   window.api.setRecordingHotkey(false);
 
-  // If saving and we have a new key
-  if (save && pendingHotkey) {
-    currentHotkey = pendingHotkey;
-    // Save logic is below in async wrapper or here if we make this async
-    // But let's handle the updateDisplay here to show the new X
-  }
-
-  // Wait to update backend? Or just update UI?
-  // We need to coordinate the async save.
-  // Let's defer functionality to the main async function below, but we need to handle button logic here or there.
-  // Actually, let's keep the main async logic in `finishRecording` or stick to `stopRecordingHotkey` being async.
+  // Clear held modifiers
+  heldModifiers.clear();
 }
 
 // Async wrapper for stop
@@ -724,8 +719,9 @@ shortcutBtn.addEventListener("click", (e) => {
 });
 
 // Clear button logic
-if (clearShortcutBtn) {
-  clearShortcutBtn.addEventListener("click", async (e) => {
+const clearBtnEl = document.getElementById("clear-shortcut-btn");
+if (clearBtnEl) {
+  clearBtnEl.addEventListener("click", async (e) => {
     e.stopPropagation();
     e.preventDefault();
 
@@ -741,8 +737,9 @@ if (clearShortcutBtn) {
 }
 
 // Confirm button logic
-if (confirmShortcutBtn) {
-  confirmShortcutBtn.addEventListener("click", (e) => {
+const confirmBtnEl = document.getElementById("confirm-shortcut-btn");
+if (confirmBtnEl) {
+  confirmBtnEl.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
     finishRecording(true);

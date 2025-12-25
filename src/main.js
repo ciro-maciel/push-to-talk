@@ -304,7 +304,7 @@ function updateTrayIcon(recording) {
 
 function createWindow() {
   const defaultBounds = {
-    width: 380,
+    width: 420,
     height: 630,
   };
 
@@ -315,7 +315,7 @@ function createWindow() {
     height: bounds.height,
     x: bounds.x,
     y: bounds.y,
-    minWidth: 380,
+    minWidth: 420,
     minHeight: 630,
     resizable: true,
     maximizable: false,

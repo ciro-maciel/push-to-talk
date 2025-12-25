@@ -1,6 +1,6 @@
 {
-  "hotkey": "",
-  "triggerMode": "hybrid",
+  "hotkey": "RightCommand",
+  "triggerMode": "hold",
   "language": "pt",
   "autoPaste": true,
   "model": "base"
