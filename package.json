@@ -90,7 +90,10 @@
     "local",
     "electron"
   ],
-  "author": "Ciro Maciel",
+  "author": {
+    "name": "Ciro Maciel",
+    "email": "ciro.maciel@riligar.click"
+  },
   "license": "MIT",
   "devDependencies": {
     "electron": "^33.0.0",
