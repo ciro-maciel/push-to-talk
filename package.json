@@ -36,10 +36,7 @@
         "from": "whisper.cpp/models/ggml-tiny.bin",
         "to": "models/ggml-tiny.bin"
       },
-      {
-        "from": "bin/ffmpeg",
-        "to": "ffmpeg"
-      },
+
       {
         "from": "config.json",
         "to": "config.json"

@@ -95,13 +95,6 @@ function getWhisperModel() {
   return path.join(__dirname, "..", "whisper.cpp", "models", modelName);
 }
 
-function getFFmpegBinary() {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, "ffmpeg");
-  }
-  return path.join(__dirname, "..", "bin", "ffmpeg");
-}
-
 // ============================================================================
 // STATE
 // ============================================================================
@@ -109,7 +102,6 @@ function getFFmpegBinary() {
 let mainWindow = null;
 let tray = null;
 let isRecording = false;
-let recProcess = null;
 
 // ============================================================================
 // PERMISSION CHECKS (macOS)
@@ -699,9 +691,6 @@ app.on("before-quit", () => {
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
-  if (recProcess) {
-    recProcess.kill("SIGINT");
-  }
 });
 
 // Handle macOS dock

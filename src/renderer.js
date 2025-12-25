@@ -114,8 +114,8 @@ async function startAudioRecording() {
     // List devices first to pick a specific one (avoiding 'default' which can be buggy)
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioInputs = devices.filter((d) => d.kind === "audioinput");
-    log(`🎤 Dispositivos encontrados: ${audioInputs.length}`);
-    audioInputs.forEach((d) => log(` - ${d.label} (${d.deviceId})`));
+    // log(`🎤 Dispositivos encontrados: ${audioInputs.length}`);
+    // audioInputs.forEach((d) => log(` - ${d.label} (${d.deviceId})`));
 
     // Prefer a non-default device if available
     let selectedDeviceId = "default";
@@ -184,11 +184,6 @@ async function startAudioRecording() {
 
       // Clone the data because inputBuffer is reused
       const bufferCopy = new Float32Array(inputData);
-
-      // Debug: Log first 5 samples of first buffer
-      if (audioBuffers.length === 0) {
-        log(`🔍 Raw Samples [0-4]: ${bufferCopy.slice(0, 5).join(", ")}`);
-      }
 
       audioBuffers.push(bufferCopy);
     };
