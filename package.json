@@ -1,0 +1,28 @@
+{
+  "name": "push-to-talk",
+  "version": "1.0.0",
+  "description": "Local Push-to-Talk transcription using whisper.cpp",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.js",
+    "dev": "bun run --watch index.js"
+  },
+  "keywords": [
+    "push-to-talk",
+    "whisper",
+    "transcription",
+    "speech-to-text",
+    "local",
+    "bun"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "clipboardy": "^4.0.0",
+    "uiohook-napi": "^1.5.4"
+  },
+  "trustedDependencies": [
+    "uiohook-napi"
+  ]
+}
