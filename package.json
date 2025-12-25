@@ -1,7 +1,7 @@
 {
   "name": "push-to-talk",
   "version": "1.0.0",
-  "description": "Local Push-to-Talk transcription using whisper.cpp",
+  "description": "Transcrição de voz 100% local e privada",
   "repository": {
     "type": "git",
     "url": "https://github.com/ciro-maciel/push-to-talk.git"

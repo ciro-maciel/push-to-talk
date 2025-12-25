@@ -600,32 +600,78 @@ async function transcribe() {
 }
 
 // ============================================================================
-// CLIPBOARD & PASTE
+// DIRECT TEXT INSERTION (no clipboard)
 // ============================================================================
 
-function simulatePaste() {
+/**
+ * Types text directly into the active text field without using clipboard.
+ * This inserts the text character by character using system automation.
+ */
+function typeText(text) {
   return new Promise((resolve) => {
     if (process.platform === "darwin") {
+      // macOS: Use AppleScript to type text directly
+      // Escape special characters for AppleScript
+      const escapedText = text
+        .replace(/\\/g, "\\\\") // Escape backslashes first
+        .replace(/"/g, '\\"') // Escape double quotes
+        .replace(/\n/g, '" & return & "'); // Handle newlines
+
       const script = `
         tell application "System Events"
-          keystroke "v" using command down
+          keystroke "${escapedText}"
         end tell
       `;
       exec(`osascript -e '${script}'`, (error) => {
         if (error) {
-          console.error("Failed to paste:", error.message);
+          console.error("Failed to type text:", error.message);
+          // Fallback: try clipboard method
+          clipboard.writeText(text);
+          exec(
+            `osascript -e 'tell application "System Events" to keystroke "v" using command down'`,
+            resolve
+          );
+        } else {
+          resolve();
         }
-        resolve();
       });
     } else if (process.platform === "win32") {
-      // Windows: Use PowerShell to simulate Ctrl+V
+      // Windows: Use PowerShell to type text
+      // Escape special characters for PowerShell
+      const escapedText = text
+        .replace(/'/g, "''")
+        .replace(/`/g, "``")
+        .replace(/\$/g, "`$");
       exec(
-        "powershell -command \"$wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys('^v')\"",
-        resolve
+        `powershell -command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${escapedText}')"`,
+        (error) => {
+          if (error) {
+            console.error("Failed to type text:", error.message);
+            // Fallback: clipboard method
+            clipboard.writeText(text);
+            exec(
+              "powershell -command \"$wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys('^v')\"",
+              resolve
+            );
+          } else {
+            resolve();
+          }
+        }
       );
     } else {
-      // Linux: Use xdotool
-      exec("xdotool key ctrl+v", resolve);
+      // Linux: Use xdotool to type text
+      // Escape special characters for shell
+      const escapedText = text.replace(/'/g, "'\\''");
+      exec(`xdotool type -- '${escapedText}'`, (error) => {
+        if (error) {
+          console.error("Failed to type text:", error.message);
+          // Fallback: clipboard method
+          clipboard.writeText(text);
+          exec("xdotool key ctrl+v", resolve);
+        } else {
+          resolve();
+        }
+      });
     }
   });
 }
@@ -665,25 +711,20 @@ async function handleRecordingComplete() {
       // Valid transcription
       // console.log("📝 Transcription:", text);
 
-      // Copy to clipboard
-      clipboard.writeText(text);
-
       mainWindow?.webContents.send("transcription", {
         text,
-        message: "Copied to clipboard!",
+        message: "Texto inserido!",
       });
 
       // Show notification
       new Notification({
-        title: "Transcription Complete",
+        title: "Transcrição Completa",
         body: text.length > 50 ? text.substring(0, 50) + "..." : text,
       }).show();
 
-      // Auto-paste
-      if (CONFIG.autoPaste) {
-        await new Promise((r) => setTimeout(r, 100));
-        await simulatePaste();
-      }
+      // Insert text directly into active text field (no clipboard)
+      await new Promise((r) => setTimeout(r, 100));
+      await typeText(text);
     }
   } else {
     mainWindow?.webContents.send("status", {

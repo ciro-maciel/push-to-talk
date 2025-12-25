@@ -52,6 +52,13 @@ jobs:
         with:
           bun-version: latest
 
+      # Linux: Install system dependencies for uiohook-napi and electron
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxtst-dev libxinerama-dev libxkbcommon-dev libxkbcommon-x11-dev libasound2-dev
+
       # --- Compilação do Whisper.cpp (Nativo por OS) ---
 
       - name: Clone whisper.cpp
