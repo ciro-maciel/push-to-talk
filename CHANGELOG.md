@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/ciro-maciel/push-to-talk/compare/v1.3.0...v1.3.1) (2025-12-25)
+
+
+### Bug Fixes
+
+* sync package.json version with semantic-release before building ([37ce4f3](https://github.com/ciro-maciel/push-to-talk/commit/37ce4f38672655643e1e1290ebd58a5e15c138ff))
+
 # [1.3.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.2.0...v1.3.0) (2025-12-25)
 
 
