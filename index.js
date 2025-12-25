@@ -2,12 +2,12 @@
  * Push-to-Talk (Whisper Local)
  *
  * A fully local, air-gapped speech-to-text application for macOS.
- * Press and hold F8 to record, release to transcribe.
+ * Press and hold Ctrl+Shift+Space to record, release to transcribe and paste.
  *
- * Stack: Bun + SoX + whisper.cpp + uiohook-napi
+ * Stack: Node.js + SoX + whisper.cpp + uiohook-napi
  */
 
-import { spawn } from "node:child_process";
+import { spawn, exec } from "node:child_process";
 import { uIOhook, UiohookKey } from "uiohook-napi";
 import clipboard from "clipboardy";
 
@@ -16,8 +16,14 @@ import clipboard from "clipboardy";
 // ============================================================================
 
 const CONFIG = {
-  // Key to trigger recording (F8)
-  triggerKey: UiohookKey.F8,
+  // Hotkey: Cmd + K (Command + K)
+  triggerKey: UiohookKey.K,
+  modifiers: {
+    ctrl: false,
+    shift: false,
+    alt: false,
+    meta: true, // Cmd key on macOS
+  },
 
   // Temporary audio file path
   audioFile: "/tmp/recording.wav",
@@ -32,6 +38,9 @@ const CONFIG = {
     channels: 1, // Mono
     bits: 16, // 16-bit depth
   },
+
+  // Auto-paste after transcription
+  autoPaste: true,
 };
 
 // ============================================================================
@@ -40,6 +49,14 @@ const CONFIG = {
 
 let isRecording = false;
 let recProcess = null;
+
+// Track modifier key states
+let modifierState = {
+  ctrl: false,
+  shift: false,
+  alt: false,
+  meta: false,
+};
 
 // ============================================================================
 // AUDIO RECORDING (SoX)
@@ -52,7 +69,7 @@ let recProcess = null;
 function startRecording() {
   if (isRecording) return;
 
-  console.log("\n🎤 Recording started... (hold F8)");
+  console.log("\n🎤 Recording started... (hold Cmd+K)");
   isRecording = true;
 
   // SoX 'rec' command arguments
@@ -196,7 +213,7 @@ async function transcribe() {
 }
 
 // ============================================================================
-// CLIPBOARD
+// CLIPBOARD & AUTO-PASTE
 // ============================================================================
 
 /**
@@ -206,9 +223,34 @@ async function copyToClipboard(text) {
   try {
     await clipboard.write(text);
     console.log("📋 Copied to clipboard!");
+    return true;
   } catch (err) {
     console.error("❌ Failed to copy to clipboard:", err.message);
+    return false;
   }
+}
+
+/**
+ * Simulate Cmd+V to paste at current cursor position using AppleScript.
+ */
+function simulatePaste() {
+  return new Promise((resolve) => {
+    const script = `
+      tell application "System Events"
+        keystroke "v" using command down
+      end tell
+    `;
+
+    exec(`osascript -e '${script}'`, (error) => {
+      if (error) {
+        console.error("❌ Failed to auto-paste:", error.message);
+        console.log("   Tip: Text is in clipboard, paste manually with Cmd+V");
+      } else {
+        console.log("✨ Text pasted at cursor position!");
+      }
+      resolve();
+    });
+  });
 }
 
 // ============================================================================
@@ -219,6 +261,7 @@ async function copyToClipboard(text) {
  * Handle the complete flow after recording stops:
  * 1. Transcribe the audio
  * 2. Copy result to clipboard
+ * 3. Auto-paste at cursor position
  */
 async function handleRecordingComplete() {
   const text = await transcribe();
@@ -226,33 +269,112 @@ async function handleRecordingComplete() {
   if (text) {
     console.log("\n📝 Transcription:");
     console.log(`   "${text}"\n`);
-    await copyToClipboard(text);
+
+    const copied = await copyToClipboard(text);
+
+    if (copied && CONFIG.autoPaste) {
+      // Small delay to ensure clipboard is ready
+      await new Promise((r) => setTimeout(r, 100));
+      await simulatePaste();
+    }
   } else {
     console.log("⚠️  No transcription result (audio too short or unclear)");
   }
 
-  console.log("🎧 Ready! Press and hold F8 to record...\n");
+  console.log("\n🎧 Ready! Press and hold Cmd+K to record...\n");
 }
 
 // ============================================================================
 // KEY LISTENER SETUP
 // ============================================================================
 
-// Track F8 state to prevent repeated events
-let f8Pressed = false;
+/**
+ * Check if all required modifiers are pressed
+ */
+function areModifiersPressed() {
+  return (
+    modifierState.ctrl === CONFIG.modifiers.ctrl &&
+    modifierState.shift === CONFIG.modifiers.shift &&
+    modifierState.alt === CONFIG.modifiers.alt &&
+    modifierState.meta === CONFIG.modifiers.meta
+  );
+}
+
+// Track K key state
+let keyPressed = false;
 
 uIOhook.on("keydown", (event) => {
-  if (event.keycode === CONFIG.triggerKey && !f8Pressed) {
-    f8Pressed = true;
+  // Update modifier states
+  if (
+    event.keycode === UiohookKey.Ctrl ||
+    event.keycode === UiohookKey.CtrlRight
+  ) {
+    modifierState.ctrl = true;
+  }
+  if (
+    event.keycode === UiohookKey.Shift ||
+    event.keycode === UiohookKey.ShiftRight
+  ) {
+    modifierState.shift = true;
+  }
+  if (
+    event.keycode === UiohookKey.Alt ||
+    event.keycode === UiohookKey.AltRight
+  ) {
+    modifierState.alt = true;
+  }
+  if (
+    event.keycode === UiohookKey.Meta ||
+    event.keycode === UiohookKey.MetaRight
+  ) {
+    modifierState.meta = true;
+  }
+
+  // Check for trigger key with modifiers
+  if (
+    event.keycode === CONFIG.triggerKey &&
+    !keyPressed &&
+    areModifiersPressed()
+  ) {
+    keyPressed = true;
     startRecording();
   }
 });
 
 uIOhook.on("keyup", async (event) => {
-  if (event.keycode === CONFIG.triggerKey && f8Pressed) {
-    f8Pressed = false;
-    await stopRecording();
-    await handleRecordingComplete();
+  // Update modifier states
+  if (
+    event.keycode === UiohookKey.Ctrl ||
+    event.keycode === UiohookKey.CtrlRight
+  ) {
+    modifierState.ctrl = false;
+  }
+  if (
+    event.keycode === UiohookKey.Shift ||
+    event.keycode === UiohookKey.ShiftRight
+  ) {
+    modifierState.shift = false;
+  }
+  if (
+    event.keycode === UiohookKey.Alt ||
+    event.keycode === UiohookKey.AltRight
+  ) {
+    modifierState.alt = false;
+  }
+  if (
+    event.keycode === UiohookKey.Meta ||
+    event.keycode === UiohookKey.MetaRight
+  ) {
+    modifierState.meta = false;
+  }
+
+  // Stop recording when K is released (if it was our trigger)
+  if (event.keycode === CONFIG.triggerKey && keyPressed) {
+    keyPressed = false;
+    if (isRecording) {
+      await stopRecording();
+      await handleRecordingComplete();
+    }
   }
 });
 
@@ -269,8 +391,18 @@ console.log(
 console.log(
   "║                                                               ║"
 );
-console.log("║   Press and hold F8 to record, release to transcribe.        ║");
-console.log("║   Transcribed text will be copied to your clipboard.         ║");
+console.log(
+  "║   Hotkey: ⌘ + K (Command + K)                                 ║"
+);
+console.log(
+  "║                                                               ║"
+);
+console.log(
+  "║   Hold to record, release to transcribe.                      ║"
+);
+console.log(
+  "║   Text will be pasted at your cursor position!                ║"
+);
 console.log(
   "║                                                               ║"
 );
@@ -281,7 +413,7 @@ console.log(
   "╚═══════════════════════════════════════════════════════════════╝"
 );
 console.log("");
-console.log("🎧 Ready! Press and hold F8 to record...\n");
+console.log("🎧 Ready! Press and hold Cmd+K to record...\n");
 
 // Start the global key listener
 uIOhook.start();

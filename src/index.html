@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline';"
+    />
+    <title>Push to Talk</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="icon">🎙️</div>
+        <h1>Push to Talk</h1>
+      </div>
+
+      <!-- Permission Warning -->
+      <div id="permission-warning" class="permission-warning hidden">
+        <p>⚠️ Permissões necessárias:</p>
+        <div class="permission-buttons">
+          <button id="mic-permission" class="permission-btn hidden">
+            🎤 Microfone
+          </button>
+          <button id="accessibility-permission" class="permission-btn hidden">
+            ♿ Acessibilidade
+          </button>
+        </div>
+      </div>
+
+      <div class="status-container">
+        <div id="status-indicator" class="status-indicator"></div>
+        <p id="status-message">Carregando...</p>
+      </div>
+
+      <div class="hotkey-display">
+        <span class="label">Atalho:</span>
+        <button id="hotkey-btn" class="hotkey-btn" title="Clique para alterar o atalho">
+          <span id="hotkey">⌘⇧Space</span>
+        </button>
+      </div>
+
+      <div id="hotkey-recording" class="hotkey-recording hidden">
+        <p>Pressione a nova combinação de teclas...</p>
+        <button id="cancel-hotkey" class="cancel-btn">Cancelar</button>
+      </div>
+
+      <div id="transcription-container" class="transcription-container hidden">
+        <p class="transcription-label">Última transcrição:</p>
+        <p id="transcription-text" class="transcription-text"></p>
+        <button id="play-audio-btn" class="play-btn" title="Ouvir gravação">▶️ Ouvir áudio</button>
+      </div>
+
+      <div class="instructions">
+        <p>Pressione o atalho para iniciar a gravação</p>
+        <p>Pressione novamente para transcrever</p>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <span style="font-size: 11px; color: #666;">Logs:</span>
+        <button id="copy-log-btn" style="background: #333; border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">Copiar Logs</button>
+      </div>
+      <div id="debug-log" class="debug-log" style="font-size: 11px; color: #aaa; margin-top: 5px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; background: #1a1a1a; padding: 10px; border-radius: 4px; border: 1px solid #333; user-select: text; -webkit-user-select: text;"></div>
+      
+      <div class="footer">
+        <p>Powered by whisper.cpp</p>
+      </div>
+    </div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

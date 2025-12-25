@@ -1,146 +1,162 @@
-# 🎙️ Push-to-Talk (Whisper Local)
+# 🎙️ Push to Talk
 
-A fully local, air-gapped speech-to-text application for macOS. Press and hold **F8** to record, release to transcribe.
+A fully local, air-gapped speech-to-text application. Press and hold a hotkey to record, release to transcribe and paste.
 
 **Zero API costs. Zero internet required. 100% local.**
 
+![Electron](https://img.shields.io/badge/Electron-33-47848F?logo=electron)
+![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 ## ✨ Features
 
-- 🎤 **Global Hotkey** - F8 works from any application
-- 🧠 **Local AI** - Uses whisper.cpp with the `small` model (optimized for pt-BR)
-- 📋 **Auto Clipboard** - Transcribed text is automatically copied
-- ⚡ **Fast** - Native C++ inference, no Python overhead
+- 🎤 **Global Hotkey** - Works from any application
+- 🧠 **Local AI** - Uses whisper.cpp for transcription
+- 📋 **Auto Paste** - Text is automatically pasted at cursor
+- ⚡ **Fast** - Native C++ inference, no cloud latency
 - 🔒 **Private** - All processing happens on your machine
+- 🖥️ **Cross-Platform** - macOS, Windows, Linux
 
 ## 📦 Prerequisites
 
-- macOS (Apple Silicon or Intel)
-- [Homebrew](https://brew.sh/)
-- [Bun](https://bun.sh/) runtime
+- [Node.js](https://nodejs.org/) v18+
+- [SoX](http://sox.sourceforge.net/) for audio recording
+- [whisper.cpp](https://github.com/ggerganov/whisper.cpp) compiled locally
 
 ## 🚀 Installation
 
-### Step 1: Install System Dependencies
+### Quick Install
 
 ```bash
-# Install SoX for audio recording
-brew install sox
+# Clone the repository
+git clone https://github.com/ciro-maciel/push-to-talk.git
+cd push-to-talk
 
-# Install Bun (if not already installed)
-curl -fsSL https://bun.sh/install | bash
+# Run the installation script
+bash install.sh
 ```
 
-### Step 2: Clone and Build whisper.cpp
+### Manual Installation
+
+#### 1. Install SoX
+
+**macOS:**
 
 ```bash
-# From this project directory
+brew install sox cmake
+```
+
+**Windows:**
+Download from [SoX website](https://sourceforge.net/projects/sox/)
+
+**Linux:**
+
+```bash
+sudo apt install sox cmake build-essential
+```
+
+#### 2. Clone and Build whisper.cpp
+
+```bash
 git clone https://github.com/ggerganov/whisper.cpp.git
-
 cd whisper.cpp
-
-# Download the 'small' model (~465 MB, best for pt-BR)
 bash ./models/download-ggml-model.sh small
-
-# Compile the binary
 make
-
-# Return to project root
 cd ..
 ```
 
-### Step 3: Install Node Dependencies
+#### 3. Install Dependencies
 
 ```bash
-bun install
+npm install
 ```
-
-### Step 4: Grant macOS Permissions
-
-Before running, you need to grant permissions in **System Settings → Privacy & Security**:
-
-1. **Microphone** - Allow Terminal/iTerm to access the microphone
-2. **Accessibility** - Allow Terminal/iTerm for global keyboard events
 
 ## 🎯 Usage
 
-```bash
-# Start the application
-bun start
+### Run in Development
 
-# Or with auto-reload during development
-bun run dev
+```bash
+npm start
 ```
 
-Then:
+### Build for Distribution
 
-1. Press and hold **F8** to start recording
-2. Speak clearly
-3. Release **F8** to transcribe
-4. The transcribed text is automatically copied to your clipboard
-5. Paste (⌘+V) anywhere!
+```bash
+# macOS
+npm run build:mac
+
+# Windows
+npm run build:win
+
+# Linux
+npm run build:linux
+```
+
+## ⌨️ Hotkey
+
+Default: **⌘ + Shift + Space** (macOS) / **Ctrl + Shift + Space** (Windows/Linux)
+
+1. **Hold** the hotkey to start recording
+2. **Speak** clearly
+3. **Release** to transcribe
+4. Text is **automatically pasted** at your cursor!
 
 ## ⚙️ Configuration
 
-Edit the `CONFIG` object in `index.js` to customize:
+Edit `src/main.js` to customize:
 
 ```javascript
 const CONFIG = {
-  triggerKey: UiohookKey.F8, // Change the hotkey
-  audioFile: "/tmp/recording.wav", // Temp file location
-  whisperBinary: "./whisper.cpp/main", // whisper.cpp path
-  whisperModel: "./whisper.cpp/models/ggml-small.bin",
+  hotkey: "CommandOrControl+Shift+Space",
+  autoPaste: true,
   audio: {
-    rate: 16000, // Sample rate (16kHz required by whisper)
-    channels: 1, // Mono
-    bits: 16, // Bit depth
+    rate: 16000,
+    channels: 1,
+    bits: 16,
   },
 };
 ```
 
 ## 🎛️ Available Models
 
-You can use different whisper models for different tradeoffs:
-
-| Model  | Size   | RAM     | Speed    | Quality    |
-| ------ | ------ | ------- | -------- | ---------- |
-| tiny   | 75 MB  | ~390 MB | ⚡⚡⚡⚡ | ⭐         |
-| base   | 142 MB | ~500 MB | ⚡⚡⚡   | ⭐⭐       |
-| small  | 466 MB | ~1.0 GB | ⚡⚡     | ⭐⭐⭐     |
-| medium | 1.5 GB | ~2.6 GB | ⚡       | ⭐⭐⭐⭐   |
-| large  | 2.9 GB | ~4.7 GB | 🐢       | ⭐⭐⭐⭐⭐ |
+| Model  | Size   | RAM     | Speed    | Quality  |
+| ------ | ------ | ------- | -------- | -------- |
+| tiny   | 75 MB  | ~390 MB | ⚡⚡⚡⚡ | ⭐       |
+| base   | 142 MB | ~500 MB | ⚡⚡⚡   | ⭐⭐     |
+| small  | 466 MB | ~1.0 GB | ⚡⚡     | ⭐⭐⭐   |
+| medium | 1.5 GB | ~2.6 GB | ⚡       | ⭐⭐⭐⭐ |
 
 To switch models:
 
 ```bash
 cd whisper.cpp
-bash ./models/download-ggml-model.sh base  # or tiny, medium, large
+bash ./models/download-ggml-model.sh base
 ```
-
-Then update `whisperModel` in `index.js`.
 
 ## 🐛 Troubleshooting
 
-### "Failed to start recording"
+### macOS Permissions
 
-- Ensure SoX is installed: `brew install sox`
-- Check microphone permissions in System Settings
+Grant permissions in **System Settings → Privacy & Security**:
 
-### "Failed to run whisper.cpp"
+- **Microphone** - Allow "Push to Talk"
+- **Accessibility** - Allow "Push to Talk" (for auto-paste)
 
-- Ensure whisper.cpp is compiled: `cd whisper.cpp && make`
-- Verify the model exists: `ls whisper.cpp/models/ggml-small.bin`
+### SoX not found
 
-### F8 key not detected
+Install SoX:
 
-- Grant Accessibility permissions to your terminal app
-- Restart the terminal after granting permissions
+- macOS: `brew install sox`
+- Windows: Download from [SoX website](https://sourceforge.net/projects/sox/)
+- Linux: `sudo apt install sox`
 
-### Poor transcription quality
+### whisper.cpp not compiled
 
-- Speak clearly and at a normal pace
-- Ensure low background noise
-- Try a larger model (base or medium)
-- For pt-BR, the `small` model works best
+```bash
+cd whisper.cpp
+make clean
+make
+```
 
 ## 📝 License
 
