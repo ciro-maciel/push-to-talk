@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.1.0...v1.2.0) (2025-12-25)
+
+
+### Features
+
+* Download pre-built `whisper.cpp` binaries instead of compiling from source and update build matrix. ([faef31a](https://github.com/ciro-maciel/push-to-talk/commit/faef31a8df9c3f6c4c7b788b175a1f61850769df))
+
 # [1.1.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.0.1...v1.1.0) (2025-12-25)
 
 
