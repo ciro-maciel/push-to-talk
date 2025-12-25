@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.2.0...v1.3.0) (2025-12-25)
+
+
+### Features
+
+* enable multi-platform builds with semantic versioning ([3dae814](https://github.com/ciro-maciel/push-to-talk/commit/3dae814c53b54ed24195885f46d6d1b6332c9aeb))
+
 # [1.2.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.1.0...v1.2.0) (2025-12-25)
 
 
