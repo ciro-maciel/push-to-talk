@@ -1164,4 +1164,3 @@ app.on("will-quit", () => {
 if (process.platform === "darwin") {
   app.dock?.hide();
 }
-//
