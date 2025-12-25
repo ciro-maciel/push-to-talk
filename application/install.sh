@@ -67,20 +67,21 @@ fi
 cd whisper.cpp
 
 # Download model if not present
-if [ ! -f "models/ggml-small.bin" ]; then
+if [ ! -f "models/ggml-base.bin" ]; then
     echo ""
-    echo -e "${YELLOW}📥 Downloading 'small' model (~465 MB)...${NC}"
+    echo -e "${YELLOW}📥 Downloading 'base' model (~148 MB)...${NC}"
     echo "   This may take a few minutes depending on your connection."
-    bash ./models/download-ggml-model.sh small
+    bash ./models/download-ggml-model.sh base
 else
-    echo -e "${GREEN}✓${NC} Model ggml-small.bin exists"
+    echo -e "${GREEN}✓${NC} Model ggml-base.bin exists"
 fi
 
 # Compile whisper if not compiled
 if [ ! -f "build/bin/whisper-cli" ]; then
     echo ""
     echo -e "${YELLOW}🔨 Compiling whisper.cpp...${NC}"
-    make
+    cmake -B build -DGGML_NATIVE=OFF
+    cmake --build build --config Release -j$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)
 else
     echo -e "${GREEN}✓${NC} whisper-cli already compiled"
 fi
