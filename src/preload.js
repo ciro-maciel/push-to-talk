@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld("api", {
     );
   },
 
+  // Send audio level for visualizer overlay
+  sendAudioLevel: (level) => {
+    ipcRenderer.send("audio-level", level);
+  },
+
   // Event listeners from main
   onStatus: (callback) =>
     ipcRenderer.on("status", (event, data) => callback(data)),

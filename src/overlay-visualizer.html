@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Visualizer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .visualizer-container {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      padding: 12px 16px;
+      background: rgba(30, 30, 30, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .bar {
+      width: 4px;
+      min-height: 4px;
+      max-height: 32px;
+      background: linear-gradient(to top, #22c55e, #84cc16, #facc15);
+      border-radius: 2px;
+      transition: height 0.05s ease-out;
+    }
+
+    .bar:nth-child(1) { animation-delay: 0ms; }
+    .bar:nth-child(2) { animation-delay: 50ms; }
+    .bar:nth-child(3) { animation-delay: 100ms; }
+    .bar:nth-child(4) { animation-delay: 150ms; }
+    .bar:nth-child(5) { animation-delay: 200ms; }
+
+    /* Idle animation when no audio */
+    @keyframes idle-pulse {
+      0%, 100% { height: 4px; opacity: 0.5; }
+      50% { height: 8px; opacity: 0.8; }
+    }
+
+    .bar.idle {
+      animation: idle-pulse 1.2s ease-in-out infinite;
+    }
+
+    /* Recording indicator dot */
+    .rec-dot {
+      width: 6px;
+      height: 6px;
+      background: #ef4444;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+  </style>
+</head>
+<body>
+  <div class="visualizer-container">
+    <div class="rec-dot"></div>
+    <div class="bar idle" id="bar1"></div>
+    <div class="bar idle" id="bar2"></div>
+    <div class="bar idle" id="bar3"></div>
+    <div class="bar idle" id="bar4"></div>
+    <div class="bar idle" id="bar5"></div>
+  </div>
+
+  <script>
+    const bars = [
+      document.getElementById('bar1'),
+      document.getElementById('bar2'),
+      document.getElementById('bar3'),
+      document.getElementById('bar4'),
+      document.getElementById('bar5')
+    ];
+
+    // Listen for audio levels from main process
+    window.overlayApi.onAudioLevel((level) => {
+      // level is 0.0 to 1.0
+      const clampedLevel = Math.min(1, Math.max(0, level));
+      
+      // Remove idle animation when receiving audio
+      bars.forEach(bar => bar.classList.remove('idle'));
+
+      // Apply different heights to each bar with some variation
+      bars.forEach((bar, index) => {
+        // Add some randomness for natural look
+        const variation = 0.7 + Math.random() * 0.6;
+        const height = Math.max(4, clampedLevel * 32 * variation);
+        bar.style.height = `${height}px`;
+        
+        // Change color based on level
+        if (clampedLevel > 0.7) {
+          bar.style.background = 'linear-gradient(to top, #f97316, #ef4444)';
+        } else if (clampedLevel > 0.4) {
+          bar.style.background = 'linear-gradient(to top, #84cc16, #facc15, #f97316)';
+        } else {
+          bar.style.background = 'linear-gradient(to top, #22c55e, #84cc16, #facc15)';
+        }
+      });
+
+      // Reset to idle if level is very low
+      if (clampedLevel < 0.01) {
+        bars.forEach(bar => bar.classList.add('idle'));
+      }
+    });
+  </script>
+</body>
+</html>

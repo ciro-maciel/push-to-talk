@@ -332,6 +332,19 @@ async function warmUpMicrophone() {
       // Clone the data because inputBuffer is reused
       const bufferCopy = new Float32Array(inputData);
       audioBuffers.push(bufferCopy);
+
+      // Calculate RMS for visualizer
+      let sum = 0;
+      for (let i = 0; i < inputData.length; i++) {
+        sum += inputData[i] * inputData[i];
+      }
+      const rms = Math.sqrt(sum / inputData.length);
+
+      // Scale RMS to 0-1 range (typical voice RMS is 0.01-0.3)
+      const normalizedLevel = Math.min(1, rms * 5);
+
+      // Send to main process for overlay (throttled by script processor buffer rate)
+      window.api.sendAudioLevel(normalizedLevel);
     };
 
     // Connect the audio processing chain:

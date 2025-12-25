@@ -16,6 +16,7 @@ import {
   Notification,
   systemPreferences,
   shell,
+  screen,
 } from "electron";
 import { spawn, exec } from "node:child_process";
 import path from "node:path";
@@ -111,6 +112,7 @@ function getWhisperModel() {
 
 let mainWindow = null;
 let tray = null;
+let overlayWindow = null;
 let isRecording = false;
 
 // Hybrid PTT State
@@ -361,6 +363,7 @@ function startRecording() {
   // console.log("🎤 Recording started...");
   isRecording = true;
   updateTrayIcon(true);
+  showOverlay();
 
   // Tell renderer to start recording
   mainWindow?.webContents.send("start-recording");
@@ -372,9 +375,92 @@ function stopRecording() {
   // console.log("⏹️ Recording stopped.");
   isRecording = false;
   updateTrayIcon(false);
+  hideOverlay();
 
   // Tell renderer to stop recording and send audio
   mainWindow?.webContents.send("stop-recording");
+}
+
+// ============================================================================
+// OVERLAY VISUALIZER
+// ============================================================================
+
+function createOverlayWindow(x, y) {
+  const overlayWidth = 120;
+  const overlayHeight = 56;
+
+  overlayWindow = new BrowserWindow({
+    width: overlayWidth,
+    height: overlayHeight,
+    x: x - overlayWidth / 2,
+    y: y - overlayHeight - 10, // Position above cursor
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    focusable: false,
+    hasShadow: false,
+    show: false, // Don't show immediately - prevents focus steal
+    webPreferences: {
+      preload: path.join(__dirname, "overlay-preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+  // Set floating level to stay on top without stealing focus
+  if (process.platform === "darwin") {
+    overlayWindow.setAlwaysOnTop(true, "floating");
+  }
+
+  // Load file then show without taking focus
+  overlayWindow.loadFile(path.join(__dirname, "overlay-visualizer.html"));
+  overlayWindow.once("ready-to-show", () => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.showInactive(); // Show without stealing focus
+    }
+  });
+
+  overlayWindow.on("closed", () => {
+    overlayWindow = null;
+  });
+}
+
+function showOverlay() {
+  const cursorPoint = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursorPoint);
+
+  // Ensure overlay stays within screen bounds
+  let x = cursorPoint.x;
+  let y = cursorPoint.y;
+
+  const overlayWidth = 120;
+  const overlayHeight = 56;
+
+  // Adjust if too close to edges
+  if (x - overlayWidth / 2 < display.bounds.x) {
+    x = display.bounds.x + overlayWidth / 2;
+  }
+  if (x + overlayWidth / 2 > display.bounds.x + display.bounds.width) {
+    x = display.bounds.x + display.bounds.width - overlayWidth / 2;
+  }
+  if (y - overlayHeight - 10 < display.bounds.y) {
+    y = cursorPoint.y + overlayHeight + 10; // Show below cursor instead
+  }
+
+  createOverlayWindow(x, y);
+}
+
+function hideOverlay() {
+  if (overlayWindow) {
+    overlayWindow.close();
+    overlayWindow = null;
+  }
 }
 
 // ============================================================================
@@ -846,6 +932,13 @@ ipcMain.handle("set-trigger-mode", async (event, mode) => {
   } catch (e) {
     console.error("Failed to set trigger mode:", e);
     return false;
+  }
+});
+
+// Audio level forwarding to overlay
+ipcMain.on("audio-level", (event, level) => {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send("audio-level", level);
   }
 });
 
