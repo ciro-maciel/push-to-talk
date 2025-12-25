@@ -633,30 +633,56 @@ async function handleRecordingComplete() {
   const text = await transcribe();
 
   if (text) {
-    console.log("📝 Transcription:", text);
+    // Noise filtering
+    const lowerText = text.toLowerCase();
+    const noisePatterns = [
+      "[música de fundo]",
+      "[fundo]",
+      "[music]",
+      "(music)",
+      "[silence]",
+      "[silêncio]",
+      "...",
+    ];
 
-    // Copy to clipboard
-    clipboard.writeText(text);
+    const isNoise = noisePatterns.some((pattern) =>
+      lowerText.includes(pattern)
+    );
 
-    mainWindow?.webContents.send("transcription", {
-      text,
-      message: "Copied to clipboard!",
-    });
+    if (isNoise) {
+      logToRenderer(`⚠️ Ruído ignorado: "${text}"`);
+      mainWindow?.webContents.send("transcription", {
+        text: "Não consegui ouvir. Tente novamente.",
+        isNoise: true,
+      });
+      // Do NOT copy to clipboard or show system notification
+    } else {
+      // Valid transcription
+      // console.log("📝 Transcription:", text);
 
-    // Show notification
-    new Notification({
-      title: "Transcription Complete",
-      body: text.length > 50 ? text.substring(0, 50) + "..." : text,
-    }).show();
+      // Copy to clipboard
+      clipboard.writeText(text);
 
-    // Auto-paste
-    if (CONFIG.autoPaste) {
-      await new Promise((r) => setTimeout(r, 100));
-      await simulatePaste();
+      mainWindow?.webContents.send("transcription", {
+        text,
+        message: "Copied to clipboard!",
+      });
+
+      // Show notification
+      new Notification({
+        title: "Transcription Complete",
+        body: text.length > 50 ? text.substring(0, 50) + "..." : text,
+      }).show();
+
+      // Auto-paste
+      if (CONFIG.autoPaste) {
+        await new Promise((r) => setTimeout(r, 100));
+        await simulatePaste();
+      }
     }
   } else {
     mainWindow?.webContents.send("status", {
-      message: "No transcription (audio too short or unclear)",
+      message: "Opa, não consegui te ouvir!",
       error: true,
     });
   }

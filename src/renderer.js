@@ -751,25 +751,12 @@ window.api.onTranscription((data) => {
   const rawText = data.text ? data.text.trim() : "";
   const lowerText = rawText.toLowerCase();
 
-  // Noise patterns to filter out
-  const noisePatterns = [
-    "[música de fundo]",
-    "[fundo]",
-    "[music]",
-    "(music)",
-    "[silence]",
-    "[silêncio]",
-    "...",
-  ];
-
-  const isNoise =
-    noisePatterns.some((pattern) => lowerText.includes(pattern)) ||
-    rawText.length === 0;
+  // Noise detected by main process
+  const isNoise = data.isNoise;
 
   if (isNoise) {
     if (transcriptionText) {
-      transcriptionText.textContent =
-        "Nenhuma fala detectada. Tente falar mais perto do microfone.";
+      transcriptionText.textContent = rawText;
       transcriptionText.classList.add("low-confidence");
     }
     setStatus("ready", "Nenhuma fala detectada");
