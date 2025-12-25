@@ -142,6 +142,22 @@ Grant permissions in **System Settings → Privacy & Security**:
 - **Microphone** - Allow "Push to Talk"
 - **Accessibility** - Allow "Push to Talk" (for auto-paste)
 
+### macOS Security Warning
+
+If you see _"Apple could not verify that Push to Talk.app is free of malware"_, this is because the app is not signed with an Apple Developer certificate.
+
+**Option 1 - System Settings:**
+
+1. Go to **System Settings → Privacy & Security**
+2. Scroll down to find the message about "Push to Talk.app" being blocked
+3. Click **"Open Anyway"**
+
+**Option 2 - Terminal:**
+
+```bash
+xattr -cr /Applications/Push\ to\ Talk.app
+```
+
 ### SoX not found
 
 Install SoX:
