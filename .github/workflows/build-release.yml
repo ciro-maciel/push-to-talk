@@ -86,6 +86,15 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
+      # Fix for Python 3.12+ removing distutils (needed by node-gyp)
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install setuptools (for node-gyp)
+        run: pip install setuptools
+
       # Recompila dependências nativas do Node (como uiohook-napi)
       - name: Rebuild Native Deps
         run: npm rebuild --build-from-source
