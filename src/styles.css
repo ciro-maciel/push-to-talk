@@ -38,12 +38,10 @@ body {
   font-family: 'Montserrat', sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  /* overflow: hidden; Removed to allow scrolling */
   -webkit-app-region: drag;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  /* Removed flex centering on body to avoid clipping issues when scrolling */
 }
 
 .container {
@@ -51,11 +49,12 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  min-height: 100vh; /* changed from height: 100% to min-height: 100vh */
   width: 100%;
-  max-width: 480px; /* Constrained width for clean look */
-  padding: 40px;    /* Increased whitespace */
-  gap: 32px;        /* Consistent large gap */
+  max-width: 480px;
+  padding: 40px;
+  gap: 32px;
+  margin: 0 auto; /* Center the container horizontally */
 }
 
 /* Typography Hierarchy */
