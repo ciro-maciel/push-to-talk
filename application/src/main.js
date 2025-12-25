@@ -192,7 +192,7 @@ function openSystemPreferences(pane) {
 // Create tray icon from PNG file
 function createTrayIcon(isRecording = false) {
   // Use the ear icon PNG for tray
-  const iconPath = path.join(__dirname, "assets", "icons", "ear.png");
+  const iconPath = path.join(__dirname, "assets", "icons", "message-2.png");
 
   let icon;
   if (fs.existsSync(iconPath)) {
