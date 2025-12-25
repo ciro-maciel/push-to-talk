@@ -223,12 +223,16 @@ function updateHotkeyDisplay(hotkey) {
   if (!hotkey) return; // Guard against null/empty
   let displayHotkey = hotkey
     .replace("CommandOrControl", "⌘")
+    .replace("RightCommand", "R-⌘")
     .replace("Command", "⌘")
+    .replace("RightControl", "R-⌃")
     .replace("Control", "⌃")
     .replace("Ctrl", "⌃")
+    .replace("RightShift", "R-⇧")
     .replace("Shift", "⇧")
-    .replace("Alt", "⌥")
+    .replace("RightOption", "R-⌥")
     .replace("Option", "⌥")
+    .replace("Alt", "⌥")
     .replace(/\+/g, " ") // Use space separator for cleaner look
     .trim();
   currentKeysDisplay.textContent = displayHotkey;
@@ -527,11 +531,24 @@ function stopRecordingHotkey() {
 // Helper to get display string for current event state
 function getEventDisplayString(event) {
   const parts = [];
-  // Standard Mac sequence: Control, Option, Shift, Command
-  if (event.ctrlKey) parts.push("⌃");
-  if (event.altKey) parts.push("⌥");
-  if (event.shiftKey) parts.push("⇧");
-  if (event.metaKey) parts.push("⌘");
+
+  // Use our held modifiers tracker if possible for better display
+  if (heldModifiers.size > 0) {
+    if (heldModifiers.has("Command")) parts.push("⌘");
+    if (heldModifiers.has("RightCommand")) parts.push("R-⌘");
+    if (heldModifiers.has("Control")) parts.push("⌃");
+    if (heldModifiers.has("RightControl")) parts.push("R-⌃");
+    if (heldModifiers.has("Option")) parts.push("⌥");
+    if (heldModifiers.has("RightOption")) parts.push("R-⌥");
+    if (heldModifiers.has("Shift")) parts.push("⇧");
+    if (heldModifiers.has("RightShift")) parts.push("R-⇧");
+  } else {
+    // Fallback
+    if (event.ctrlKey) parts.push("⌃");
+    if (event.altKey) parts.push("⌥");
+    if (event.shiftKey) parts.push("⇧");
+    if (event.metaKey) parts.push("⌘");
+  }
 
   const key = event.key;
   const code = event.code;
@@ -554,10 +571,80 @@ function getEventDisplayString(event) {
 // Helper to get Electron Accelerator string
 function buildAcceleratorString(event) {
   const parts = [];
-  if (event.metaKey) parts.push("CommandOrControl");
-  if (event.ctrlKey) parts.push("Control");
-  if (event.altKey) parts.push("Alt");
-  if (event.shiftKey) parts.push("Shift");
+
+  // Manual modifier check using getModifierState could be more precise but event.metaKey etc is easier
+  // However to distinguish Left/Right we need to be careful.
+  // We can iterate the "active" modifiers.
+  // But standard DOM event just says "event.metaKey is true". It doesn't say "Left Meta is true" (except via location if it was the KeyDown event for THAT key)
+  // PROBLEM: If I hold Right Option + F10. The event is KeyDown F10.
+  // event.location will be 0 (standard) for F10.
+  // We can't easily know WHICH Modifier is held just from 'event.altKey'.
+  // We rely on the KeyDown events tracked during recording?
+  // Actually, 'event.getModifierState("AltGraph")' might help for Right Alt on Windows, but on Mac standard AltRight ...
+  //
+  // ALTERNATIVE: Since we are in "Recording Mode", we are tracking KeyDowns in `pressedKeys`? No, that's Main process.
+  // In Renderer we are just using DOM events.
+  //
+  // IMPROVED APPROACH:
+  // We cannot reliably know if Left or Right Option is held during the *F10* event using standard properties alone if we want to differentiate *combinations*.
+  // However, modern browsers supporting `event.code` might help if we tracked state.
+  // BUT: The user presses keys sequentially.
+  // If I press RightOption (KeyDown), we can capture it.
+  // If I hold it and press F10 (KeyDown).
+  //
+  // Let's implement a small key tracker HERE in renderer for the recording phase.
+}
+
+// Simple key tracker for recording phase to detect precise modifiers
+const heldModifiers = new Set();
+
+function updateHeldModifiers(event) {
+  if (event.type === "keydown") {
+    if (event.code === "MetaLeft") heldModifiers.add("Command");
+    if (event.code === "MetaRight") heldModifiers.add("RightCommand");
+    if (event.code === "AltLeft") heldModifiers.add("Option");
+    if (event.code === "AltRight") heldModifiers.add("RightOption");
+    if (event.code === "ControlLeft") heldModifiers.add("Control");
+    if (event.code === "ControlRight") heldModifiers.add("RightControl");
+    if (event.code === "ShiftLeft") heldModifiers.add("Shift");
+    if (event.code === "ShiftRight") heldModifiers.add("RightShift");
+  } else if (event.type === "keyup") {
+    if (event.code === "MetaLeft") heldModifiers.delete("Command");
+    if (event.code === "MetaRight") heldModifiers.delete("RightCommand");
+    if (event.code === "AltLeft") heldModifiers.delete("Option");
+    if (event.code === "AltRight") heldModifiers.delete("RightOption");
+    if (event.code === "ControlLeft") heldModifiers.delete("Control");
+    if (event.code === "ControlRight") heldModifiers.delete("RightControl");
+    if (event.code === "ShiftLeft") heldModifiers.delete("Shift");
+    if (event.code === "ShiftRight") heldModifiers.delete("RightShift");
+  }
+}
+
+// Modified build function that uses the tracker
+function buildAcceleratorString(event) {
+  const parts = [];
+
+  // Use held modifiers if available, otherwise fallback to event props (less precise)
+  if (heldModifiers.has("Command")) parts.push("Command");
+  if (heldModifiers.has("RightCommand")) parts.push("RightCommand");
+
+  if (heldModifiers.has("Control")) parts.push("Control");
+  if (heldModifiers.has("RightControl")) parts.push("RightControl");
+
+  if (heldModifiers.has("Option")) parts.push("Option");
+  if (heldModifiers.has("RightOption")) parts.push("RightOption");
+
+  if (heldModifiers.has("Shift")) parts.push("Shift");
+  if (heldModifiers.has("RightShift")) parts.push("RightShift");
+
+  // Fallback if set is empty but event says mod exists (unexpected case, maybe focus lost/gained?)
+  // If so, default to Left
+  if (parts.length === 0) {
+    if (event.metaKey) parts.push("CommandOrControl"); // Default back to generic if checking failed
+    if (event.ctrlKey) parts.push("Control");
+    if (event.altKey) parts.push("Alt");
+    if (event.shiftKey) parts.push("Shift");
+  }
 
   const key = event.key;
   const code = event.code;
@@ -578,14 +665,18 @@ function buildAcceleratorString(event) {
   parts.push(keyName);
 
   // Requirement: At least one modifier OR it's a Function/Special key
-  // But user asked for flexibility. Electron generally requires Modifier+Key for global shortcuts
-  // unless it's like F1-F12 or Media keys.
-  const hasModifier = parts.length > 1; // key is 1, so >1 means modifiers exist
+  const hasModifier = parts.length > 1;
   const isFunctionKey = keyName.startsWith("F") && keyName.length > 1;
   const isSpecial = [
     "MediaPlayPause",
     "MediaNextTrack",
     "MediaPreviousTrack",
+    "Insert",
+    "Home",
+    "End",
+    "PageUp",
+    "PageDown",
+    "Delete",
   ].includes(keyName);
 
   if (!hasModifier && !isFunctionKey && !isSpecial) return null;
@@ -604,6 +695,9 @@ shortcutBtn.addEventListener("click", () => {
 // Capture keys for visualization and saving
 document.addEventListener("keydown", async (event) => {
   if (!isRecordingHotkey) return;
+
+  updateHeldModifiers(event);
+
   event.preventDefault();
   event.stopPropagation();
 
@@ -646,6 +740,9 @@ document.addEventListener("keydown", async (event) => {
 // Handle keyup to update display if user releases a key (e.g. keeps Command held but releases Shift)
 document.addEventListener("keyup", (event) => {
   if (!isRecordingHotkey) return;
+
+  updateHeldModifiers(event);
+
   event.preventDefault();
   event.stopPropagation();
 

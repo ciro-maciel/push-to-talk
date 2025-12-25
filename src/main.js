@@ -750,11 +750,25 @@ const KEY_MAP = {
     UiohookKey.Ctrl,
     UiohookKey.CtrlRight,
   ],
+  // Legacy/Generic (matches either)
   Command: [UiohookKey.Meta, UiohookKey.MetaRight],
   Control: [UiohookKey.Ctrl, UiohookKey.CtrlRight],
   Shift: [UiohookKey.Shift, UiohookKey.ShiftRight],
   Alt: [UiohookKey.Alt, UiohookKey.AltRight],
   Option: [UiohookKey.Alt, UiohookKey.AltRight],
+
+  // Specific Left/Right
+  RightCommand: UiohookKey.MetaRight,
+  RightControl: UiohookKey.CtrlRight,
+  RightShift: UiohookKey.ShiftRight,
+  RightOption: UiohookKey.AltRight,
+  RightAlt: UiohookKey.AltRight,
+
+  LeftCommand: UiohookKey.Meta,
+  LeftControl: UiohookKey.Ctrl,
+  LeftShift: UiohookKey.Shift,
+  LeftOption: UiohookKey.Alt,
+  LeftAlt: UiohookKey.Alt,
 };
 
 // Helper: Check if hotkey is currently pressed
