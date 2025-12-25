@@ -21,7 +21,8 @@
     "publish": {
       "provider": "github",
       "owner": "ciro-maciel",
-      "repo": "push-to-talk"
+      "repo": "push-to-talk",
+      "releaseType": "release"
     },
     "appId": "com.pushToTalk.app",
     "productName": "Push to Talk",
