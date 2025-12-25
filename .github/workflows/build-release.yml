@@ -90,7 +90,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           cd whisper.cpp
-          cmake -B build -DGGML_NATIVE=OFF
+          cmake -B build -DGGML_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF
           cmake --build build --config Release -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 
       - name: Build Whisper (Windows)
@@ -98,7 +98,7 @@ jobs:
         shell: bash
         run: |
           cd whisper.cpp
-          cmake -B build
+          cmake -B build -DBUILD_SHARED_LIBS=OFF
           cmake --build build --config Release
           # Copy to expected location
           mkdir -p build/bin
