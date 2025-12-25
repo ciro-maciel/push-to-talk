@@ -863,6 +863,36 @@ ipcMain.handle("open-external", (event, url) => {
 });
 
 // ============================================================================
+// AUTO-LAUNCH (Login Item Settings)
+// Works on macOS, Windows, and Linux
+// ============================================================================
+
+ipcMain.handle("get-auto-launch", () => {
+  const settings = app.getLoginItemSettings();
+  return settings.openAtLogin;
+});
+
+ipcMain.handle("set-auto-launch", (event, enabled) => {
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+      // macOS specific: open hidden (minimized to tray)
+      openAsHidden: true,
+      // Windows/Linux: path to the executable
+      path: app.getPath("exe"),
+    });
+
+    // Save preference to store for persistence across updates
+    store.set("autoLaunch", enabled);
+
+    return true;
+  } catch (err) {
+    console.error("Failed to set auto-launch:", err);
+    return false;
+  }
+});
+
+// ============================================================================
 // APP LIFECYCLE
 // ============================================================================
 

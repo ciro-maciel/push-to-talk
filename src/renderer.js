@@ -27,6 +27,7 @@ const btnOpenAccessibility = document.getElementById(
 const btnCheckPermissions = document.getElementById("btn-check-permissions");
 const stepMic = document.getElementById("step-mic");
 const stepAccessibility = document.getElementById("step-accessibility");
+const autoLaunchToggle = document.getElementById("auto-launch-toggle");
 
 let isRecordingHotkey = false;
 let currentHotkey = "";
@@ -55,6 +56,28 @@ async function init() {
 
   setStatus("ready", `Pronto! Pressione o atalho para gravar`);
   log("Push to Talk iniciado e pronto.");
+
+  // Initialize auto-launch toggle
+  if (autoLaunchToggle) {
+    const isAutoLaunch = await window.api.getAutoLaunch();
+    autoLaunchToggle.checked = isAutoLaunch;
+
+    autoLaunchToggle.addEventListener("change", async (e) => {
+      const enabled = e.target.checked;
+      const success = await window.api.setAutoLaunch(enabled);
+      if (success) {
+        log(
+          enabled
+            ? "✅ Inicialização automática ativada"
+            : "⚠️ Inicialização automática desativada"
+        );
+      } else {
+        log("❌ Falha ao configurar inicialização automática", "error");
+        // Revert toggle on failure
+        autoLaunchToggle.checked = !enabled;
+      }
+    });
+  }
 
   // Hide loading screen with smooth transition
   if (loadingScreen) {

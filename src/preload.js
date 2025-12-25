@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld("api", {
   getConfig: () => ipcRenderer.invoke("get-config"),
   copyToClipboard: (text) => ipcRenderer.invoke("copy-to-clipboard", text),
 
+  // Auto-launch settings
+  getAutoLaunch: () => ipcRenderer.invoke("get-auto-launch"),
+  setAutoLaunch: (enabled) => ipcRenderer.invoke("set-auto-launch", enabled),
+
   // Hotkey management
   setHotkey: (hotkey) => ipcRenderer.invoke("set-hotkey", hotkey),
   setRecordingHotkey: (isRecording) =>

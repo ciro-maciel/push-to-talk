@@ -68,7 +68,8 @@
         "deb"
       ],
       "icon": "assets/icon.png",
-      "category": "Utility"
+      "category": "Utility",
+      "desktop": "build/push-to-talk.desktop"
     }
   },
   "keywords": [
