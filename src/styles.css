@@ -262,6 +262,35 @@ h1 {
   box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
 }
 
+.clear-shortcut-btn,
+.confirm-shortcut-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.clear-shortcut-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--error);
+}
+
+.confirm-shortcut-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--success);
+}
+
+.clear-shortcut-btn.hidden,
+.confirm-shortcut-btn.hidden {
+  display: none;
+}
+
 .shortcut-content {
   display: flex;
   align-items: center;

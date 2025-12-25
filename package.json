@@ -2,6 +2,10 @@
   "name": "push-to-talk",
   "version": "1.0.0",
   "description": "Local Push-to-Talk transcription using whisper.cpp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ciro-maciel/push-to-talk.git"
+  },
   "main": "src/main.js",
   "type": "module",
   "scripts": {
@@ -14,6 +18,11 @@
     "build:linux": "electron-builder --linux"
   },
   "build": {
+    "publish": {
+      "provider": "github",
+      "owner": "ciro-maciel",
+      "repo": "push-to-talk"
+    },
     "appId": "com.pushToTalk.app",
     "productName": "Push to Talk",
     "directories": {

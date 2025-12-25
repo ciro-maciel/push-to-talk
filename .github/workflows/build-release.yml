@@ -1,0 +1,99 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  # JOBS 1: Determina a versão e cria a Release (apenas se houver mudanças relevantes)
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+
+  # JOB 2: Build Multi-Plataforma (Roda apenas se uma nova versão for criada)
+  build:
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      # --- Compilação do Whisper.cpp (Nativo por OS) ---
+
+      - name: Clone whisper.cpp
+        run: git clone https://github.com/ggerganov/whisper.cpp.git
+
+      - name: Download Model (Small)
+        shell: bash
+        run: |
+          cd whisper.cpp/models
+          ./download-ggml-model.sh small
+
+      # Compilação Mac/Linux
+      - name: Build Whisper (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd whisper.cpp
+          make
+
+      # Compilação Windows (Usando CMake que é mais seguro no CI Windows)
+      - name: Build Whisper (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd whisper.cpp
+          cmake -B build
+          cmake --build build --config Release
+          # Move o executável para onde o electron-builder espera
+          mkdir -p build/bin
+          cp build/bin/Release/main.exe build/bin/whisper-cli.exe
+
+      # --- Instalação e Build do Electron ---
+
+      - name: Install Dependencies
+        run: bun install
+
+      # Recompila dependências nativas do Node (como uiohook-napi)
+      - name: Rebuild Native Deps
+        run: npm rebuild --build-from-source
+
+      - name: Build & Publish Electron App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Necessário para evitar erro de assinatura no Mac se não tiver certificado pago
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          npm exec electron-builder -- --publish always

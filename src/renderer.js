@@ -220,7 +220,15 @@ if (copyLogBtn) {
 }
 
 function updateHotkeyDisplay(hotkey) {
-  if (!hotkey) return; // Guard against null/empty
+  const clearBtn = document.getElementById("clear-shortcut-btn");
+
+  if (!hotkey || hotkey.trim() === "") {
+    // Empty hotkey - show placeholder and hide clear button
+    currentKeysDisplay.textContent = "Clique para definir";
+    if (clearBtn) clearBtn.classList.add("hidden");
+    return;
+  }
+
   let displayHotkey = hotkey
     .replace("CommandOrControl", "⌘")
     .replace("RightCommand", "R-⌘")
@@ -233,9 +241,15 @@ function updateHotkeyDisplay(hotkey) {
     .replace("RightOption", "R-⌥")
     .replace("Option", "⌥")
     .replace("Alt", "⌥")
-    .replace(/\+/g, " ") // Use space separator for cleaner look
+    .replace(/\+/g, " ")
     .trim();
+
   currentKeysDisplay.textContent = displayHotkey;
+
+  // Show clear button when we have a valid shortcut (and not recording)
+  if (clearBtn && !isRecordingHotkey) {
+    clearBtn.classList.remove("hidden");
+  }
 }
 
 function setStatus(state, message) {
@@ -503,32 +517,53 @@ function writeString(view, offset, string) {
   }
 }
 
-// Hotkey recording logic
-function startRecordingHotkey() {
-  if (isRecordingHotkey) return;
-  isRecordingHotkey = true;
-  shortcutBtn.classList.add("recording");
+const clearShortcutBtn = document.getElementById("clear-shortcut-btn");
 
-  // Clear previous and show waiting state
-  currentKeysDisplay.classList.add("hidden");
-  recordingText.textContent = "Digite o atalho...";
-  recordingText.classList.remove("hidden");
+// State for modifiers
+const heldModifiers = new Set();
+let pendingHotkey = null;
 
-  window.api.setRecordingHotkey(true);
+function updateHeldModifiers(event) {
+  const code = event.code;
+  if (event.type === "keydown") {
+    if (code === "MetaLeft") heldModifiers.add("Command");
+    if (code === "MetaRight") heldModifiers.add("RightCommand");
+    if (code === "ControlLeft") heldModifiers.add("Control");
+    if (code === "ControlRight") heldModifiers.add("RightControl");
+    if (code === "AltLeft") heldModifiers.add("Option");
+    if (code === "AltRight") heldModifiers.add("RightOption");
+    if (code === "ShiftLeft") heldModifiers.add("Shift");
+    if (code === "ShiftRight") heldModifiers.add("RightShift");
+  } else if (event.type === "keyup") {
+    if (code === "MetaLeft") heldModifiers.delete("Command");
+    if (code === "MetaRight") heldModifiers.delete("RightCommand");
+    if (code === "ControlLeft") heldModifiers.delete("Control");
+    if (code === "ControlRight") heldModifiers.delete("RightControl");
+    if (code === "AltLeft") heldModifiers.delete("Option");
+    if (code === "AltRight") heldModifiers.delete("RightOption");
+    if (code === "ShiftLeft") heldModifiers.delete("Shift");
+    if (code === "ShiftRight") heldModifiers.delete("RightShift");
+
+    // Safety clear if no meta keys are pressed according to event
+    if (!event.metaKey) {
+      heldModifiers.delete("Command");
+      heldModifiers.delete("RightCommand");
+    }
+    if (!event.ctrlKey) {
+      heldModifiers.delete("Control");
+      heldModifiers.delete("RightControl");
+    }
+    if (!event.altKey) {
+      heldModifiers.delete("Option");
+      heldModifiers.delete("RightOption");
+    }
+    if (!event.shiftKey) {
+      heldModifiers.delete("Shift");
+      heldModifiers.delete("RightShift");
+    }
+  }
 }
 
-function stopRecordingHotkey() {
-  isRecordingHotkey = false;
-  shortcutBtn.classList.remove("recording");
-  currentKeysDisplay.classList.remove("hidden");
-  recordingText.classList.add("hidden");
-  // Ensure we restore the display if cancelled without saving could be handled,
-  // but usually we just update to whatever currentHotkey is.
-  updateHotkeyDisplay(currentHotkey);
-  window.api.setRecordingHotkey(false);
-}
-
-// Helper to get display string for current event state
 function getEventDisplayString(event) {
   const parts = [];
 
@@ -568,79 +603,22 @@ function getEventDisplayString(event) {
   return parts.join(" ");
 }
 
-// Helper to get Electron Accelerator string
 function buildAcceleratorString(event) {
   const parts = [];
 
-  // Manual modifier check using getModifierState could be more precise but event.metaKey etc is easier
-  // However to distinguish Left/Right we need to be careful.
-  // We can iterate the "active" modifiers.
-  // But standard DOM event just says "event.metaKey is true". It doesn't say "Left Meta is true" (except via location if it was the KeyDown event for THAT key)
-  // PROBLEM: If I hold Right Option + F10. The event is KeyDown F10.
-  // event.location will be 0 (standard) for F10.
-  // We can't easily know WHICH Modifier is held just from 'event.altKey'.
-  // We rely on the KeyDown events tracked during recording?
-  // Actually, 'event.getModifierState("AltGraph")' might help for Right Alt on Windows, but on Mac standard AltRight ...
-  //
-  // ALTERNATIVE: Since we are in "Recording Mode", we are tracking KeyDowns in `pressedKeys`? No, that's Main process.
-  // In Renderer we are just using DOM events.
-  //
-  // IMPROVED APPROACH:
-  // We cannot reliably know if Left or Right Option is held during the *F10* event using standard properties alone if we want to differentiate *combinations*.
-  // However, modern browsers supporting `event.code` might help if we tracked state.
-  // BUT: The user presses keys sequentially.
-  // If I press RightOption (KeyDown), we can capture it.
-  // If I hold it and press F10 (KeyDown).
-  //
-  // Let's implement a small key tracker HERE in renderer for the recording phase.
-}
-
-// Simple key tracker for recording phase to detect precise modifiers
-const heldModifiers = new Set();
-
-function updateHeldModifiers(event) {
-  if (event.type === "keydown") {
-    if (event.code === "MetaLeft") heldModifiers.add("Command");
-    if (event.code === "MetaRight") heldModifiers.add("RightCommand");
-    if (event.code === "AltLeft") heldModifiers.add("Option");
-    if (event.code === "AltRight") heldModifiers.add("RightOption");
-    if (event.code === "ControlLeft") heldModifiers.add("Control");
-    if (event.code === "ControlRight") heldModifiers.add("RightControl");
-    if (event.code === "ShiftLeft") heldModifiers.add("Shift");
-    if (event.code === "ShiftRight") heldModifiers.add("RightShift");
-  } else if (event.type === "keyup") {
-    if (event.code === "MetaLeft") heldModifiers.delete("Command");
-    if (event.code === "MetaRight") heldModifiers.delete("RightCommand");
-    if (event.code === "AltLeft") heldModifiers.delete("Option");
-    if (event.code === "AltRight") heldModifiers.delete("RightOption");
-    if (event.code === "ControlLeft") heldModifiers.delete("Control");
-    if (event.code === "ControlRight") heldModifiers.delete("RightControl");
-    if (event.code === "ShiftLeft") heldModifiers.delete("Shift");
-    if (event.code === "ShiftRight") heldModifiers.delete("RightShift");
-  }
-}
-
-// Modified build function that uses the tracker
-function buildAcceleratorString(event) {
-  const parts = [];
-
-  // Use held modifiers if available, otherwise fallback to event props (less precise)
+  // Use held modifiers if available
   if (heldModifiers.has("Command")) parts.push("Command");
   if (heldModifiers.has("RightCommand")) parts.push("RightCommand");
-
   if (heldModifiers.has("Control")) parts.push("Control");
   if (heldModifiers.has("RightControl")) parts.push("RightControl");
-
   if (heldModifiers.has("Option")) parts.push("Option");
   if (heldModifiers.has("RightOption")) parts.push("RightOption");
-
   if (heldModifiers.has("Shift")) parts.push("Shift");
   if (heldModifiers.has("RightShift")) parts.push("RightShift");
 
-  // Fallback if set is empty but event says mod exists (unexpected case, maybe focus lost/gained?)
-  // If so, default to Left
+  // Fallback
   if (parts.length === 0) {
-    if (event.metaKey) parts.push("CommandOrControl"); // Default back to generic if checking failed
+    if (event.metaKey) parts.push("CommandOrControl");
     if (event.ctrlKey) parts.push("Control");
     if (event.altKey) parts.push("Alt");
     if (event.shiftKey) parts.push("Shift");
@@ -649,9 +627,10 @@ function buildAcceleratorString(event) {
   const key = event.key;
   const code = event.code;
 
-  // Ignore if only modifier is pressed for the "final" check
-  if (["Meta", "Control", "Shift", "Alt", "Ctrl", "Command"].includes(key))
-    return null;
+  // Ignore if acting key itself is a modifier
+  if (["Meta", "Control", "Shift", "Alt", "Ctrl", "Command"].includes(key)) {
+    return parts.length > 0 ? parts.join("+") : null;
+  }
 
   let keyName = key;
   if (code.startsWith("Key")) keyName = code.replace("Key", "");
@@ -663,95 +642,168 @@ function buildAcceleratorString(event) {
   else keyName = key.toUpperCase();
 
   parts.push(keyName);
-
-  // Requirement: At least one modifier OR it's a Function/Special key
-  const hasModifier = parts.length > 1;
-  const isFunctionKey = keyName.startsWith("F") && keyName.length > 1;
-  const isSpecial = [
-    "MediaPlayPause",
-    "MediaNextTrack",
-    "MediaPreviousTrack",
-    "Insert",
-    "Home",
-    "End",
-    "PageUp",
-    "PageDown",
-    "Delete",
-  ].includes(keyName);
-
-  if (!hasModifier && !isFunctionKey && !isSpecial) return null;
-
   return parts.join("+");
 }
+const confirmShortcutBtn = document.getElementById("confirm-shortcut-btn");
 
-shortcutBtn.addEventListener("click", () => {
+// Hotkey recording logic
+function startRecordingHotkey() {
+  if (isRecordingHotkey) return;
+  isRecordingHotkey = true;
+  shortcutBtn.classList.add("recording");
+
+  // Clear previous and show waiting state
+  currentKeysDisplay.classList.add("hidden");
+  recordingText.textContent = "Digite o atalho...";
+  recordingText.classList.remove("hidden");
+
+  // Toggle buttons: Show Check, Hide X
+  if (confirmShortcutBtn) confirmShortcutBtn.classList.remove("hidden");
+  if (clearShortcutBtn) clearShortcutBtn.classList.add("hidden");
+
+  window.api.setRecordingHotkey(true);
+}
+
+function stopRecordingHotkey(save = true) {
+  isRecordingHotkey = false;
+  shortcutBtn.classList.remove("recording");
+
+  // Restore UI
+  currentKeysDisplay.classList.remove("hidden");
+  recordingText.classList.add("hidden");
+
+  // Hide Confirm Button
+  if (confirmShortcutBtn) confirmShortcutBtn.classList.add("hidden");
+
+  window.api.setRecordingHotkey(false);
+
+  // If saving and we have a new key
+  if (save && pendingHotkey) {
+    currentHotkey = pendingHotkey;
+    // Save logic is below in async wrapper or here if we make this async
+    // But let's handle the updateDisplay here to show the new X
+  }
+
+  // Wait to update backend? Or just update UI?
+  // We need to coordinate the async save.
+  // Let's defer functionality to the main async function below, but we need to handle button logic here or there.
+  // Actually, let's keep the main async logic in `finishRecording` or stick to `stopRecordingHotkey` being async.
+}
+
+// Async wrapper for stop
+async function finishRecording(save = true) {
+  stopRecordingHotkey(save); // Sync UI updates
+
+  if (save && pendingHotkey) {
+    currentHotkey = pendingHotkey;
+    updateHotkeyDisplay(currentHotkey);
+
+    const success = await window.api.setHotkey(currentHotkey);
+    if (success) {
+      setStatus("ready", "Atalho salvo!");
+    } else {
+      setStatus("error", "Erro ao salvar");
+    }
+  } else {
+    // Revert display
+    updateHotkeyDisplay(currentHotkey);
+  }
+  pendingHotkey = null;
+}
+
+shortcutBtn.addEventListener("click", (e) => {
+  // Ignore if clicking the buttons
+  if (e.target.closest("#clear-shortcut-btn")) return;
+  if (e.target.closest("#confirm-shortcut-btn")) return;
+
   if (isRecordingHotkey) {
-    stopRecordingHotkey();
+    finishRecording(true);
   } else {
     startRecordingHotkey();
   }
 });
 
-// Capture keys for visualization and saving
+// Clear button logic
+if (clearShortcutBtn) {
+  clearShortcutBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    // Clear backend
+    currentHotkey = "";
+    updateHotkeyDisplay("");
+    await window.api.setHotkey("");
+    setStatus("ready", "Atalho limpo. Digite o novo.");
+
+    // Start recording immediately
+    startRecordingHotkey();
+  });
+}
+
+// Confirm button logic
+if (confirmShortcutBtn) {
+  confirmShortcutBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    finishRecording(true);
+  });
+}
+
+// Global click (Blur) logic
+document.addEventListener("click", (e) => {
+  if (isRecordingHotkey && !shortcutBtn.contains(e.target)) {
+    finishRecording(true); // Auto-save on blur
+  }
+});
+
+// Capture keys
 document.addEventListener("keydown", async (event) => {
   if (!isRecordingHotkey) return;
 
   updateHeldModifiers(event);
-
   event.preventDefault();
-  event.stopPropagation();
+  event.stopPropagation(); // Stop bubbling
 
-  // Cancel on Escape
   if (event.key === "Escape") {
-    stopRecordingHotkey();
+    // Revert
+    stopRecordingHotkey(false); // False = Cancel/Revert
     return;
   }
 
-  // Live visual update
+  // Update visual text only
   const displayStr = getEventDisplayString(event);
   if (displayStr) {
     recordingText.textContent = displayStr;
   }
 
-  // Try to build valid accelerator
+  // Build potential accelerator
   const accelerator = buildAcceleratorString(event);
   if (accelerator) {
-    // Valid shortcut detected
-    currentHotkey = accelerator;
-    updateHotkeyDisplay(accelerator);
-
-    // Slight delay to let user see the full combo before closing
-    setTimeout(async () => {
-      const success = await window.api.setHotkey(accelerator);
-      if (success) {
-        setStatus("ready", "Atalho atualizado!");
-        setTimeout(
-          () => setStatus("ready", "Pronto! Pressione o atalho para gravar"),
-          2000
-        );
-      } else {
-        setStatus("error", "Falha ao registrar atalho");
-      }
-      stopRecordingHotkey();
-    }, 150); // Small 150ms buffer for UX
+    pendingHotkey = accelerator;
   }
 });
 
-// Handle keyup to update display if user releases a key (e.g. keeps Command held but releases Shift)
 document.addEventListener("keyup", (event) => {
   if (!isRecordingHotkey) return;
-
   updateHeldModifiers(event);
-
   event.preventDefault();
   event.stopPropagation();
 
-  // Update display on release too, so if they let go of a key it reflects what's still held
+  // On key up, we might want to "finalize" if it was a combo?
+  // User said "Save when leaving edit field".
+  // So we just keep updating the display.
+  // Exception: If they release ALL keys, maybe show what's pending?
+  // Current logic just shows what is actively PRESSED.
+  // Let's stick to showing held keys.
+
   const displayStr = getEventDisplayString(event);
   if (displayStr) {
     recordingText.textContent = displayStr;
   } else {
-    recordingText.textContent = "Digite o atalho...";
+    // If nothing held, show pending if exists, or prompt
+    recordingText.textContent = pendingHotkey
+      ? pendingHotkey.replace(/\+/g, " ")
+      : "Digite...";
   }
 });
 
