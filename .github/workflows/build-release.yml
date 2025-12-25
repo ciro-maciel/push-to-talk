@@ -8,9 +8,6 @@ on:
 permissions:
   contents: write
 
-env:
-  WHISPER_VERSION: "1.7.4"
-
 jobs:
   # JOB 1: Determina a versão e cria a Release
   release:
@@ -42,16 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-latest
-            whisper_zip: whisper-v1.7.4-bin-arm64.zip
-            whisper_cli: whisper-cli
-          - os: ubuntu-latest
-            whisper_zip: whisper-v1.7.4-bin-x64.zip
-            whisper_cli: whisper-cli
-          - os: windows-latest
-            whisper_zip: whisper-v1.7.4-bin-x64.zip
-            whisper_cli: whisper-cli.exe
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -72,21 +60,33 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxtst-dev libxinerama-dev libxkbcommon-dev libxkbcommon-x11-dev libasound2-dev
 
-      # Download pre-built whisper.cpp binary (MUCH faster than compiling)
-      - name: Download Whisper Binary
+      # --- WHISPER.CPP (compile from source on all platforms) ---
+
+      - name: Clone whisper.cpp
+        run: git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git
+
+      - name: Build Whisper (macOS/Linux)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd whisper.cpp
+          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+
+      - name: Build Whisper (Windows)
+        if: matrix.os == 'windows-latest'
         shell: bash
         run: |
-          mkdir -p whisper.cpp/build/bin
+          cd whisper.cpp
+          cmake -B build
+          cmake --build build --config Release
+          # Copy to expected location
+          mkdir -p build/bin
+          cp build/bin/Release/whisper-cli.exe build/bin/whisper-cli.exe
+
+      # Download model (all platforms)
+      - name: Download Whisper Model
+        shell: bash
+        run: |
           mkdir -p whisper.cpp/models
-
-          # Download pre-built binary
-          curl -L -o whisper.zip "https://github.com/ggerganov/whisper.cpp/releases/download/v1.7.4/${{ matrix.whisper_zip }}"
-          unzip whisper.zip -d whisper-temp
-          cp whisper-temp/${{ matrix.whisper_cli }} whisper.cpp/build/bin/
-          chmod +x whisper.cpp/build/bin/${{ matrix.whisper_cli }} || true
-          rm -rf whisper.zip whisper-temp
-
-          # Download model
           curl -L -o whisper.cpp/models/ggml-small.bin "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
 
       # --- Electron Build ---
