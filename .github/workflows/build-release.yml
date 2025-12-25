@@ -12,6 +12,9 @@ jobs:
   # JOB 1: Determina a versão e cria a Release
   release:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: application
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
       new_release_version: ${{ steps.semantic.outputs.new_release_version }}
@@ -27,6 +30,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          working_directory: application
           extra_plugins: |
             @semantic-release/changelog
             @semantic-release/git
@@ -36,6 +40,9 @@ jobs:
     needs: release
     if: needs.release.outputs.new_release_published == 'true'
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: application
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +76,7 @@ jobs:
       # Linux: Install system dependencies
       - name: Install Linux Dependencies
         if: matrix.os == 'ubuntu-latest'
+        working-directory: .
         run: |
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxtst-dev libxinerama-dev libxkbcommon-dev libxkbcommon-x11-dev libxrandr-dev libasound2-dev libxt-dev
@@ -100,7 +108,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p whisper.cpp/models
-          curl -L -o whisper.cpp/models/ggml-small.bin "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+          curl -L -o whisper.cpp/models/ggml-base.bin "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin"
 
       # --- Electron Build ---
 
@@ -113,6 +121,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install setuptools (for node-gyp)
+        working-directory: .
         run: pip install setuptools
 
       - name: Rebuild Native Deps
