@@ -407,6 +407,10 @@ h1 {
 
 .footer {
   margin-top: auto; /* Push to bottom */
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 11px;
   color: var(--text-tertiary);
   -webkit-app-region: no-drag; /* Allow clicking on links */
@@ -860,72 +864,80 @@ h1 {
   height: 100%;
 }
 
-/* Auto-Launch Toggle (Inline, Compact) */
-.auto-launch-toggle-inline {
-  display: inline-flex;
+/* Auto-Launch Switch (Compact, in Footer) */
+.auto-launch-switch {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.2s ease;
   -webkit-app-region: no-drag;
-  margin-top: 4px;
 }
 
-.auto-launch-toggle-inline:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--border-strong);
-}
-
-.auto-launch-toggle-inline input {
+.auto-launch-switch input {
   display: none;
 }
 
-.toggle-slider-mini {
+.switch-track {
   position: relative;
-  width: 28px;
-  height: 16px;
+  width: 36px;
+  height: 20px;
   background-color: var(--border-strong);
-  border-radius: 16px;
+  border-radius: 20px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
 }
 
-.toggle-slider-mini::before {
-  content: "";
+.switch-thumb {
   position: absolute;
-  height: 12px;
-  width: 12px;
-  left: 2px;
   top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
   background-color: white;
   border-radius: 50%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.auto-launch-toggle-inline input:checked + .toggle-slider-mini {
+.switch-thumb .icon-off,
+.switch-thumb .icon-on {
+  position: absolute;
+  transition: opacity 0.2s ease;
+}
+
+.switch-thumb .icon-off {
+  opacity: 1;
+  stroke: var(--text-tertiary);
+}
+
+.switch-thumb .icon-on {
+  opacity: 0;
+  stroke: var(--success);
+}
+
+/* Checked state */
+.auto-launch-switch input:checked + .switch-track {
   background-color: var(--success);
 }
 
-.auto-launch-toggle-inline input:checked + .toggle-slider-mini::before {
-  transform: translateX(12px);
+.auto-launch-switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(16px);
 }
 
-.toggle-text {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  transition: color 0.2s ease;
+.auto-launch-switch input:checked + .switch-track .switch-thumb .icon-off {
+  opacity: 0;
 }
 
-.auto-launch-toggle-inline:hover .toggle-text {
-  color: var(--text-secondary);
+.auto-launch-switch input:checked + .switch-track .switch-thumb .icon-on {
+  opacity: 1;
 }
 
-.auto-launch-toggle-inline input:checked ~ .toggle-text {
-  color: var(--text-secondary);
+/* Hover effect */
+.auto-launch-switch:hover .switch-track {
+  background-color: var(--border-subtle);
+}
+
+.auto-launch-switch input:checked:hover + .switch-track {
+  background-color: #059669; /* Emerald 600 - darker green on hover */
 }

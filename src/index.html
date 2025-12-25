@@ -26,12 +26,6 @@
       <div class="header">
         <img src="assets/icons/ear.png" alt="Push to Talk" class="header-icon" />
         <h1>Push to Talk</h1>
-        <!-- Auto-Launch Toggle (subtle, inline) -->
-        <label class="auto-launch-toggle-inline">
-          <input type="checkbox" id="auto-launch-toggle" />
-          <span class="toggle-slider-mini"></span>
-          <span class="toggle-text">Iniciar com o sistema</span>
-        </label>
       </div>
 
       <!-- Permission Modal -->
@@ -143,6 +137,22 @@
           <img src="assets/images/349602.jpeg" alt="Ciro Cesar Maciel" class="avatar" />
           <span>Powered by <strong>Ciro Cesar Maciel</strong></span>
         </a>
+        
+        <!-- Auto-Launch Toggle (compact with icon) -->
+        <label class="auto-launch-switch" title="Iniciar com o sistema">
+          <input type="checkbox" id="auto-launch-toggle" />
+          <span class="switch-track">
+            <span class="switch-thumb">
+              <svg class="icon-off" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+              <svg class="icon-on" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </span>
+          </span>
+        </label>
       </div>
     </div>
 
