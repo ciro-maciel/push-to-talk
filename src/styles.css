@@ -267,6 +267,7 @@ h1 {
   margin-top: auto;
   font-size: 11px;
   color: var(--text-tertiary);
+  -webkit-app-region: no-drag; /* Allow clicking on links */
 }
 
 /* Helper Classes */
@@ -407,6 +408,7 @@ h1 {
   flex-direction: column;
   gap: 8px;
   margin-top: auto;
+  -webkit-app-region: no-drag; /* Allow clicking on logs */
 }
 
 .logs-header {
