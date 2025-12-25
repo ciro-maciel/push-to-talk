@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/ciro-maciel/push-to-talk/compare/v1.0.0...v1.0.1) (2025-12-25)
+
+
+### Bug Fixes
+
+* Add Python 3.12 setup and install setuptools for node-gyp compatibility. ([08fccac](https://github.com/ciro-maciel/push-to-talk/commit/08fccac3f87f6aead086549e34a25d3c385366ac))
+
 # 1.0.0 (2025-12-25)
 
 
