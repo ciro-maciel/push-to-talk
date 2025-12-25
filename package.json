@@ -88,6 +88,7 @@
   "dependencies": {
     "clipboardy": "^4.0.0",
     "electron-mac-permissions": "^2.2.2",
-    "electron-store": "^11.0.2"
+    "electron-store": "^11.0.2",
+    "uiohook-napi": "^1.5.4"
   }
 }

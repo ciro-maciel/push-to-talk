@@ -23,6 +23,9 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import permissions from "electron-mac-permissions";
 import Store from "electron-store";
+import pkg from "uiohook-napi";
+const { uIOhook, UiohookKey } = pkg;
+const uiohook = uIOhook;
 const { getAuthStatus, askForMicrophoneAccess, askForAccessibilityAccess } =
   permissions;
 
@@ -108,6 +111,12 @@ function getWhisperModel() {
 let mainWindow = null;
 let tray = null;
 let isRecording = false;
+
+// Hybrid PTT State
+let pressedKeys = new Set();
+let recordingStartTime = 0;
+let isLatched = false; // true if "Tapped" (latched on), false if "Holding"
+let isPaused = false; // To pause listener (e.g. when recording hotkey in UI)
 
 // ============================================================================
 // PERMISSION CHECKS (macOS)
@@ -541,29 +550,121 @@ async function handleRecordingComplete() {
 // GLOBAL HOTKEY (Toggle Mode)
 // ============================================================================
 
-function registerHotkey() {
-  globalShortcut.unregisterAll();
+// ============================================================================
+// GLOBAL HOTKEY (Hybrid: Tap to Toggle / Hold to PTT)
+// ============================================================================
 
-  const registered = globalShortcut.register(CONFIG.hotkey, async () => {
-    if (!isRecording) {
-      // Start recording
-      startRecording();
+// Map Electron Accelerator strings to Uiohook Keycodes
+const KEY_MAP = {
+  Space: UiohookKey.Space,
+  Enter: UiohookKey.Enter,
+  Escape: UiohookKey.Escape,
+  Tab: UiohookKey.Tab,
+  Backspace: UiohookKey.Backspace,
+
+  // Modifiers (Check both Left and Right)
+  CommandOrControl: [
+    UiohookKey.Meta,
+    UiohookKey.MetaRight,
+    UiohookKey.Ctrl,
+    UiohookKey.CtrlRight,
+  ],
+  Command: [UiohookKey.Meta, UiohookKey.MetaRight],
+  Control: [UiohookKey.Ctrl, UiohookKey.CtrlRight],
+  Shift: [UiohookKey.Shift, UiohookKey.ShiftRight],
+  Alt: [UiohookKey.Alt, UiohookKey.AltRight],
+  Option: [UiohookKey.Alt, UiohookKey.AltRight],
+};
+
+// Helper: Check if hotkey is currently pressed
+function isHotkeyPressed() {
+  const keys = CONFIG.hotkey.split("+");
+
+  for (const k of keys) {
+    const mapped =
+      KEY_MAP[k] ||
+      KEY_MAP[k.toUpperCase()] ||
+      UiohookKey[k.length === 1 ? k.toUpperCase() : k];
+
+    // If mapped to array (modifiers), check if ANY is pressed
+    if (Array.isArray(mapped)) {
+      if (!mapped.some((code) => pressedKeys.has(code))) return false;
+    } else if (mapped) {
+      if (!pressedKeys.has(mapped)) return false;
     } else {
-      // Stop recording and transcribe
-      await stopRecording();
-      await handleRecordingComplete();
+      // Fallback for single letters like 'A', 'B'
+      if (k.length === 1) {
+        const charCode = UiohookKey[k.toUpperCase()];
+        if (charCode && !pressedKeys.has(charCode)) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function startUiohook() {
+  uiohook.on("input", (e) => {
+    if (isPaused) return;
+
+    if (e.type === 4) {
+      // KeyDown
+      pressedKeys.add(e.keycode);
+
+      if (isHotkeyPressed()) {
+        if (!isRecording) {
+          // Start Logic
+          console.log("⚡ Hotkey Pressed -> Starting...");
+          startRecording();
+          recordingStartTime = Date.now();
+          isLatched = false; // Initially assume holding, will confirm on release
+        } else if (isLatched) {
+          // Already recording and was latched (Toggle Mode) -> User pressed again to Stop
+          console.log(
+            "⚡ Hotkey PRESSED (Latched) -> Stopping (Toggle Off)..."
+          );
+          stopRecording();
+          handleRecordingComplete();
+          isLatched = false;
+        }
+      }
+    } else if (e.type === 5) {
+      // KeyUp
+      // If we were pressing the hotkey, check if we are releasing it
+      const wasPressed = isHotkeyPressed();
+      pressedKeys.delete(e.keycode);
+      const isPressedNow = isHotkeyPressed();
+
+      // If it WAS pressed and NOW is NOT (meaning we just released the hotkey combo or part of it)
+      // AND we are recording...
+      if (wasPressed && !isPressedNow && isRecording) {
+        const duration = Date.now() - recordingStartTime;
+
+        if (!isLatched) {
+          if (duration < 500) {
+            // Short press (< 500ms) -> LATCH IT (Toggle Mode)
+            console.log(`⚡ Short Press (${duration}ms) -> Latching ON`);
+            isLatched = true;
+          } else {
+            // Long press (> 500ms) -> STOP (PTT Mode)
+            console.log(
+              `⚡ Long Press (${duration}ms) -> Stopping (PTT Release)...`
+            );
+            stopRecording();
+            handleRecordingComplete();
+          }
+        }
+      }
     }
   });
 
-  if (!registered) {
-    console.error("Failed to register hotkey:", CONFIG.hotkey);
-    mainWindow?.webContents.send("status", {
-      message: `Failed to register hotkey: ${CONFIG.hotkey}`,
-      error: true,
-    });
-  } else {
-    console.log("Hotkey registered:", CONFIG.hotkey);
-  }
+  uiohook.start();
+  console.log("Hooks started");
+}
+
+function registerHotkey() {
+  // We don't use globalShortcut anymore for the triggering
+  // But we start the hook if not started
+  // We can restart/configure logic here if needed
 }
 
 // ============================================================================
@@ -612,13 +713,14 @@ ipcMain.handle("copy-to-clipboard", (event, text) => {
 });
 
 // Temporarily disable hotkey while user is recording a new one
-ipcMain.handle("set-recording-hotkey", (event, isRecording) => {
-  if (isRecording) {
-    globalShortcut.unregisterAll();
-    console.log("⏸️ Hotkey temporarily disabled for recording");
+// Temporarily disable hotkey while user is recording a new one
+ipcMain.handle("set-recording-hotkey", (event, recordingState) => {
+  if (recordingState) {
+    isPaused = true;
+    console.log("⏸️ Hook paused for recording");
   } else {
-    registerHotkey();
-    console.log("▶️ Hotkey re-enabled");
+    isPaused = false;
+    console.log("▶️ Hook resumed");
   }
 });
 
@@ -699,7 +801,7 @@ app.whenReady().then(async () => {
 
   createWindow();
   createTray();
-  registerHotkey();
+  startUiohook(); // Start the global hook
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
