@@ -614,9 +614,9 @@ function startUiohook() {
       if (isHotkeyPressed()) {
         if (!isRecording) {
           // Start Logic
-          console.log(
-            `⚡ Hotkey Pressed (${CONFIG.triggerMode}) -> Starting...`
-          );
+          // console.log(
+          //   `⚡ Hotkey Pressed (${CONFIG.triggerMode}) -> Starting...`
+          // );
           startRecording();
           recordingStartTime = Date.now();
           isLatched = false; // Initially assume holding, will confirm on release
@@ -627,16 +627,16 @@ function startUiohook() {
           // Already recording and was latched (Toggle Mode) -> User pressed again to Stop
           // 'hold' mode does not use latching, so it shouldn't hit this if logic is correct,
           // but effectively pressing again in 'hold' mode while recording is just continuing to hold
-          console.log(
-            "⚡ Hotkey PRESSED (Latched) -> Stopping (Toggle Off)..."
-          );
+          // console.log(
+          //   "⚡ Hotkey PRESSED (Latched) -> Stopping (Toggle Off)..."
+          // );
           stopRecording();
           handleRecordingComplete();
           isLatched = false;
         } else if (CONFIG.triggerMode === "toggle") {
           // In toggle mode, if we are recording (even if not latched, though it should always be latched in toggle)
           // we stop.
-          console.log("⚡ Hotkey PRESSED (Toggle) -> Stopping...");
+          // console.log("⚡ Hotkey PRESSED (Toggle) -> Stopping...");
           stopRecording();
           handleRecordingComplete();
         }
@@ -659,7 +659,7 @@ function startUiohook() {
           isLatched = true;
         } else if (CONFIG.triggerMode === "hold") {
           // Hold mode: Always stop on release
-          console.log(`⚡ Release (Hold Mode) -> Stopping...`);
+          // console.log(`⚡ Release (Hold Mode) -> Stopping...`);
           stopRecording();
           handleRecordingComplete();
         } else {
@@ -667,13 +667,13 @@ function startUiohook() {
           if (!isLatched) {
             if (duration < 500) {
               // Short press (< 500ms) -> LATCH IT (Toggle Mode)
-              console.log(`⚡ Short Press (${duration}ms) -> Latching ON`);
+              // console.log(`⚡ Short Press (${duration}ms) -> Latching ON`);
               isLatched = true;
             } else {
               // Long press (> 500ms) -> STOP (PTT Mode)
-              console.log(
-                `⚡ Long Press (${duration}ms) -> Stopping (PTT Release)...`
-              );
+              // console.log(
+              //   `⚡ Long Press (${duration}ms) -> Stopping (PTT Release)...`
+              // );
               stopRecording();
               handleRecordingComplete();
             }
@@ -684,7 +684,7 @@ function startUiohook() {
   });
 
   uiohook.start();
-  console.log("Hooks started");
+  // console.log("Hooks started");
 }
 
 function registerHotkey() {
@@ -799,7 +799,7 @@ ipcMain.handle("set-hotkey", async (event, newHotkey) => {
 ipcMain.handle("set-trigger-mode", async (event, mode) => {
   try {
     CONFIG.triggerMode = mode;
-    console.log(`🔄 Trigger Mode set to: ${mode}`);
+    // console.log(`🔄 Trigger Mode set to: ${mode}`);
 
     const configPath = app.isPackaged
       ? path.join(process.resourcesPath, "config.json")

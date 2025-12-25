@@ -233,59 +233,93 @@ h1 {
 /* Transcription Box */
 .transcription-container {
   width: 100%;
-  padding: 24px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
+  padding: 16px 20px; /* Reduced padding from 24px */
+  background: white;
+  border-radius: 12px; /* Slightly tighter radius */
   border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm); /* more subtle shadow */
   -webkit-app-region: no-drag;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px; /* Reduced gap */
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.transcription-container:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .transcription-label {
-  font-size: 11px;
+  font-size: 10px; /* Slightly smaller */
   color: var(--text-tertiary);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  margin-bottom: 0;
 }
 
 .transcription-text {
-  font-size: 14px;
-  line-height: 1.6;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px; /* Back to 14px (cleaner for short text) */
+  font-weight: 500;
+  line-height: 1.5;
   color: var(--text-primary);
   word-wrap: break-word;
+  padding-left: 12px;
+  border-left: 3px solid var(--accent);
+}
+
+/* Empty state styling */
+.transcription-text:empty::before {
+  content: "Sua transcrição aparecerá aqui...";
+  color: var(--text-tertiary);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.transcription-text.low-confidence {
+  color: var(--text-tertiary);
+  font-style: italic;
+  border-left-color: var(--border-subtle); /* Gray instead of accent color */
 }
 
 .play-btn {
   align-self: flex-start;
-  background: white;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  border-radius: 6px;
-  padding: 6px 12px;
+  background: var(--bg-secondary); /* Softer bg */
+  border: 1px solid transparent; /* Cleaner */
+  color: var(--text-primary);
+  border-radius: 6px; /* Slightly reduced radius for tighter look */
+  padding: 6px 12px; /* Compact padding */
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 4px;
+}
+
+.play-btn svg {
+  stroke-width: 2.5px;
 }
 
 .play-btn:hover {
+  background: var(--bg-tertiary);
   color: var(--text-primary);
-  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.play-btn:active {
+  transform: scale(0.98);
 }
 
 /* Instructions & Footer */
-.instructions p {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
+
 
 .footer {
   margin-top: auto; /* Push to bottom */
@@ -643,6 +677,14 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-left: 2px;
+}
+
+.controls-helper {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-top: 8px;
+  font-weight: 500;
 }
 
 .divider-vertical {

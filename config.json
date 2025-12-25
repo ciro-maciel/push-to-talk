@@ -1,6 +1,6 @@
 {
   "hotkey": "CommandOrControl+K",
-  "triggerMode": "hold",
+  "triggerMode": "hybrid",
   "language": "pt",
   "autoPaste": true,
   "model": "tiny"

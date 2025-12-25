@@ -594,9 +594,43 @@ window.api.onStopRecording(async () => {
 
 window.api.onTranscription((data) => {
   if (transcriptionContainer) transcriptionContainer.classList.remove("hidden");
-  if (transcriptionText) transcriptionText.textContent = data.text;
-  setStatus("ready", data.message || "Copiado!");
-  log(`✅ Transcrição recebida: "${data.text.substring(0, 20)}..."`);
+
+  // Clean up text
+  const rawText = data.text ? data.text.trim() : "";
+  const lowerText = rawText.toLowerCase();
+
+  // Noise patterns to filter out
+  const noisePatterns = [
+    "[música de fundo]",
+    "[fundo]",
+    "[music]",
+    "(music)",
+    "[silence]",
+    "[silêncio]",
+    "...",
+  ];
+
+  const isNoise =
+    noisePatterns.some((pattern) => lowerText.includes(pattern)) ||
+    rawText.length === 0;
+
+  if (isNoise) {
+    if (transcriptionText) {
+      transcriptionText.textContent =
+        "Nenhuma fala detectada. Tente falar mais perto do microfone.";
+      transcriptionText.classList.add("low-confidence");
+    }
+    setStatus("ready", "Nenhuma fala detectada");
+    log(`⚠️ Ruído filtrado: "${rawText}" -> Exibindo mensagem amigável.`);
+  } else {
+    if (transcriptionText) {
+      transcriptionText.textContent = rawText;
+      transcriptionText.classList.remove("low-confidence");
+    }
+    setStatus("ready", data.message || "Copiado!");
+    log(`✅ Transcrição recebida: "${rawText.substring(0, 20)}..."`);
+  }
+
   checkAndShowPermissions();
 });
 
