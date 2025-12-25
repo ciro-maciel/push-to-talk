@@ -61,6 +61,9 @@ function loadConfig() {
     hotkey: userConfig.hotkey || "CommandOrControl+Shift+Space",
     triggerMode: userConfig.triggerMode || "hybrid", // hybrid, toggle, hold
     language: userConfig.language || "pt",
+    prompt:
+      userConfig.prompt ||
+      "A frase pode conter termos técnicos em inglês, programação e desenvolvimento de software. Pontuação e formatação corretas.",
     autoPaste: userConfig.autoPaste !== false,
     model: userConfig.model || "tiny",
     audioDevice: userConfig.audioDevice || "default",
@@ -535,6 +538,8 @@ async function transcribe() {
       CONFIG.audioFile,
       "-l",
       CONFIG.language,
+      "--prompt",
+      CONFIG.prompt,
       "-nt",
       "--no-prints",
     ];
@@ -709,6 +714,34 @@ const KEY_MAP = {
   Escape: UiohookKey.Escape,
   Tab: UiohookKey.Tab,
   Backspace: UiohookKey.Backspace,
+
+  // Navigation
+  Home: UiohookKey.Home,
+  End: UiohookKey.End,
+  PageUp: UiohookKey.PageUp,
+  PageDown: UiohookKey.PageDown,
+  Delete: UiohookKey.Delete,
+  Insert: UiohookKey.Insert,
+
+  // Arrow Keys
+  ArrowUp: UiohookKey.ArrowUp,
+  ArrowDown: UiohookKey.ArrowDown,
+  ArrowLeft: UiohookKey.ArrowLeft,
+  ArrowRight: UiohookKey.ArrowRight,
+
+  // F-Keys
+  F1: UiohookKey.F1,
+  F2: UiohookKey.F2,
+  F3: UiohookKey.F3,
+  F4: UiohookKey.F4,
+  F5: UiohookKey.F5,
+  F6: UiohookKey.F6,
+  F7: UiohookKey.F7,
+  F8: UiohookKey.F8,
+  F9: UiohookKey.F9,
+  F10: UiohookKey.F10,
+  F11: UiohookKey.F11,
+  F12: UiohookKey.F12,
 
   // Modifiers (Check both Left and Right)
   CommandOrControl: [

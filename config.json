@@ -3,5 +3,5 @@
   "triggerMode": "hybrid",
   "language": "pt",
   "autoPaste": true,
-  "model": "tiny"
+  "model": "base"
 }

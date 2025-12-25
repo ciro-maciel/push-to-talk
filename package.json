@@ -22,7 +22,7 @@
     "files": [
       "src/**/*",
       "whisper.cpp/build/bin/whisper-cli",
-      "whisper.cpp/models/ggml-tiny.bin",
+      "whisper.cpp/models/ggml-base.bin",
       "!whisper.cpp/.git",
       "!whisper.cpp/build/**/*.o",
       "!whisper.cpp/build/**/*.a"
@@ -33,8 +33,8 @@
         "to": "whisper-cli"
       },
       {
-        "from": "whisper.cpp/models/ggml-tiny.bin",
-        "to": "models/ggml-tiny.bin"
+        "from": "whisper.cpp/models/ggml-base.bin",
+        "to": "models/ggml-base.bin"
       },
       {
         "from": "config.json",
