@@ -752,14 +752,14 @@ function startUiohook() {
           //   "⚡ Hotkey PRESSED (Latched) -> Stopping (Toggle Off)..."
           // );
           stopRecording();
-          handleRecordingComplete();
+          // handleRecordingComplete is called by transcribe-audio handler when renderer sends audio
           isLatched = false;
         } else if (CONFIG.triggerMode === "toggle") {
           // In toggle mode, if we are recording (even if not latched, though it should always be latched in toggle)
           // we stop.
           // console.log("⚡ Hotkey PRESSED (Toggle) -> Stopping...");
           stopRecording();
-          handleRecordingComplete();
+          // handleRecordingComplete is called by transcribe-audio handler when renderer sends audio
         }
       }
     } else if (e.type === 5) {
@@ -782,7 +782,7 @@ function startUiohook() {
           // Hold mode: Always stop on release
           // console.log(`⚡ Release (Hold Mode) -> Stopping...`);
           stopRecording();
-          handleRecordingComplete();
+          // handleRecordingComplete is called by transcribe-audio handler when renderer sends audio
         } else {
           // Hybrid Mode (Default)
           if (!isLatched) {
@@ -796,7 +796,7 @@ function startUiohook() {
               //   `⚡ Long Press (${duration}ms) -> Stopping (PTT Release)...`
               // );
               stopRecording();
-              handleRecordingComplete();
+              // handleRecordingComplete is called by transcribe-audio handler when renderer sends audio
             }
           }
         }
