@@ -33,6 +33,8 @@ let currentHotkey = "";
 
 // Initialize
 async function init() {
+  const loadingScreen = document.getElementById("loading-screen");
+
   const permissions = await checkAndShowPermissions();
 
   // Warm up microphone for instant recording (if permissions granted)
@@ -53,6 +55,11 @@ async function init() {
 
   setStatus("ready", `Pronto! Pressione o atalho para gravar`);
   log("Push to Talk iniciado e pronto.");
+
+  // Hide loading screen with smooth transition
+  if (loadingScreen) {
+    loadingScreen.classList.add("hidden");
+  }
 }
 
 function updateSegmentUI(activeMode) {

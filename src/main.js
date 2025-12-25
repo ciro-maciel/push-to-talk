@@ -181,83 +181,116 @@ function openSystemPreferences(pane) {
 }
 
 // ============================================================================
-// TRAY ICON
+// TRAY ICON - Tabler Icons PNG
 // ============================================================================
 
-function createTray() {
-  // Create a simple icon (16x16 for tray)
-  const iconPath = path.join(__dirname, "assets", "tray-icon.png");
+// Create tray icon from PNG file
+function createTrayIcon(isRecording = false) {
+  // Use the ear icon PNG for tray
+  const iconPath = path.join(__dirname, "assets", "icons", "ear.png");
 
   let icon;
   if (fs.existsSync(iconPath)) {
     icon = nativeImage.createFromPath(iconPath);
+    // Resize to 16x16 for tray (standard size)
+    icon = icon.resize({ width: 16, height: 16 });
   } else {
-    // Create a simple colored icon if file doesn't exist
-    icon = nativeImage.createEmpty();
+    // Fallback: create a simple circle icon
+    const size = 16;
+    const canvas = Buffer.alloc(size * size * 4);
+    for (let i = 0; i < size * size; i++) {
+      const x = i % size;
+      const y = Math.floor(i / size);
+      const dist = Math.sqrt((x - 8) ** 2 + (y - 8) ** 2);
+      if (dist < 6) {
+        canvas[i * 4] = isRecording ? 255 : 0;
+        canvas[i * 4 + 1] = isRecording ? 59 : 0;
+        canvas[i * 4 + 2] = isRecording ? 48 : 0;
+        canvas[i * 4 + 3] = 255;
+      }
+    }
+    icon = nativeImage.createFromBuffer(canvas, { width: size, height: size });
   }
 
-  tray = new Tray(icon.isEmpty() ? createDefaultIcon() : icon);
-  tray.setToolTip("Push to Talk - Ready");
+  // Template image for macOS (auto adapts to dark/light mode) - only for idle
+  if (!isRecording && process.platform === "darwin") {
+    icon.setTemplateImage(true);
+  }
 
-  const contextMenu = Menu.buildFromTemplate([
+  return icon;
+}
+
+// Build the tray context menu
+function buildTrayMenu() {
+  const hotkeyDisplay = CONFIG.hotkey
+    .replace("CommandOrControl", "⌘")
+    .replace("Command", "⌘")
+    .replace("Control", "⌃")
+    .replace("Shift", "⇧")
+    .replace("Alt", "⌥")
+    .replace("Option", "⌥")
+    .replace(/\+/g, "");
+
+  return Menu.buildFromTemplate([
     {
-      label: "🎤 Push to Talk",
+      label: "Push to Talk",
+      enabled: false,
+    },
+    {
+      label: isRecording ? "● Gravando..." : "○ Pronto",
       enabled: false,
     },
     { type: "separator" },
     {
-      label: "Show Window",
-      click: () => mainWindow?.show(),
+      label: "Abrir Configurações",
+      accelerator: "CmdOrCtrl+,",
+      click: () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      },
     },
+    // {
+    //   label: `Iniciar Gravação   ${hotkeyDisplay}`,
+    //   enabled: !isRecording,
+    //   click: () => {
+    //     if (!isRecording) {
+    //       startRecording();
+    //     }
+    //   },
+    // },
+    { type: "separator" },
     {
-      label: `Hotkey: ${CONFIG.hotkey}`,
-      enabled: false,
+      label: "Sobre Push to Talk",
+      click: () => {
+        app.showAboutPanel();
+      },
     },
     { type: "separator" },
     {
-      label: "Quit",
+      label: "Sair",
+      accelerator: "CmdOrCtrl+Q",
       click: () => app.quit(),
     },
   ]);
+}
 
-  tray.setContextMenu(contextMenu);
+function createTray() {
+  tray = new Tray(createTrayIcon(false));
+  tray.setToolTip("Push to Talk");
+  tray.setContextMenu(buildTrayMenu());
 
   tray.on("click", () => {
     mainWindow?.show();
+    mainWindow?.focus();
   });
-}
-
-function createDefaultIcon() {
-  // Create a 16x16 icon programmatically
-  const size = 16;
-  const canvas = Buffer.alloc(size * size * 4);
-
-  for (let i = 0; i < size * size; i++) {
-    const x = i % size;
-    const y = Math.floor(i / size);
-    const cx = size / 2;
-    const cy = size / 2;
-    const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-
-    if (dist < 6) {
-      // Red circle
-      canvas[i * 4] = 255; // R
-      canvas[i * 4 + 1] = 59; // G
-      canvas[i * 4 + 2] = 48; // B
-      canvas[i * 4 + 3] = 255; // A
-    } else {
-      canvas[i * 4 + 3] = 0; // Transparent
-    }
-  }
-
-  return nativeImage.createFromBuffer(canvas, { width: size, height: size });
 }
 
 function updateTrayIcon(recording) {
   if (!tray) return;
-  tray.setToolTip(
-    recording ? "Push to Talk - Recording..." : "Push to Talk - Ready"
-  );
+
+  tray.setImage(createTrayIcon(recording));
+  tray.setToolTip(recording ? "Push to Talk – Gravando..." : "Push to Talk");
+  tray.setContextMenu(buildTrayMenu());
 }
 
 // ============================================================================
@@ -266,8 +299,8 @@ function updateTrayIcon(recording) {
 
 function createWindow() {
   const defaultBounds = {
-    width: 600,
-    height: 700,
+    width: 380,
+    height: 630,
   };
 
   const bounds = store.get("windowBounds", defaultBounds);
@@ -277,8 +310,10 @@ function createWindow() {
     height: bounds.height,
     x: bounds.x,
     y: bounds.y,
+    minWidth: 380,
+    minHeight: 630,
     resizable: true,
-    maximizable: true,
+    maximizable: false,
     fullscreenable: false,
     show: false,
     frame: true,
@@ -777,15 +812,7 @@ ipcMain.handle("set-hotkey", async (event, newHotkey) => {
 
     // Update tray menu
     if (tray) {
-      const contextMenu = Menu.buildFromTemplate([
-        { label: "🎤 Push to Talk", enabled: false },
-        { type: "separator" },
-        { label: "Show Window", click: () => mainWindow?.show() },
-        { label: `Hotkey: ${newHotkey}`, enabled: false },
-        { type: "separator" },
-        { label: "Quit", click: () => app.quit() },
-      ]);
-      tray.setContextMenu(contextMenu);
+      tray.setContextMenu(buildTrayMenu());
     }
 
     return true;
@@ -860,6 +887,17 @@ app.whenReady().then(async () => {
   }
 
   createWindow();
+
+  // Configure About Panel
+  app.setAboutPanelOptions({
+    applicationName: "Push to Talk",
+    applicationVersion: "1.0.0",
+    version: "1.0.0",
+    copyright: "© 2026 Ciro Cesar Maciel",
+    credits: "Transcrição de voz 100% local e privada",
+    website: "https://www.linkedin.com/in/ciromaciel/",
+  });
+
   createTray();
   startUiohook(); // Start the global hook
 
