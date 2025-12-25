@@ -889,6 +889,7 @@ app.whenReady().then(async () => {
   createWindow();
 
   // Configure About Panel
+  // Note: On macOS, the About icon comes from the app's .icns file (after build)
   app.setAboutPanelOptions({
     applicationName: "Push to Talk",
     applicationVersion: "1.0.0",
