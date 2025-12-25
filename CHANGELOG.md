@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.3.2...v1.4.0) (2025-12-25)
+
+
+### Features
+
+* Add `releaseType` to publish configuration and `libxt-dev` to Linux build dependencies. ([fa6d41f](https://github.com/ciro-maciel/push-to-talk/commit/fa6d41fde5a56727253fdca90a6487bf31ac1dba))
+
 ## [1.3.2](https://github.com/ciro-maciel/push-to-talk/compare/v1.3.1...v1.3.2) (2025-12-25)
 
 
