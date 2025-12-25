@@ -48,16 +48,17 @@ function loadConfig() {
   if (fs.existsSync(configPath)) {
     try {
       userConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      console.log("✅ Config loaded from:", configPath);
+      // console.log("✅ Config loaded from:", configPath);
     } catch (err) {
       console.error("⚠️ Failed to parse config.json:", err.message);
     }
   } else {
-    console.log("⚠️ config.json not found, using defaults");
+    // console.log("⚠️ config.json not found, using defaults");
   }
 
   return {
     hotkey: userConfig.hotkey || "CommandOrControl+Shift+Space",
+    triggerMode: userConfig.triggerMode || "hybrid", // hybrid, toggle, hold
     language: userConfig.language || "pt",
     autoPaste: userConfig.autoPaste !== false,
     model: userConfig.model || "tiny",
@@ -126,7 +127,7 @@ async function checkMicrophonePermission() {
   if (process.platform !== "darwin") return true;
 
   const status = getAuthStatus("microphone");
-  console.log("🎤 Microphone permission status:", status);
+  // console.log("🎤 Microphone permission status:", status);
 
   if (status === "authorized") {
     return true;
@@ -146,7 +147,7 @@ function checkAccessibilityPermission() {
   if (process.platform !== "darwin") return true;
 
   const status = getAuthStatus("accessibility");
-  console.log("♿ Accessibility permission status:", status);
+  // console.log("♿ Accessibility permission status:", status);
 
   if (status === "authorized") {
     return true;
@@ -322,7 +323,7 @@ function createWindow() {
 function startRecording() {
   if (isRecording) return;
 
-  console.log("🎤 Recording started...");
+  // console.log("🎤 Recording started...");
   isRecording = true;
   updateTrayIcon(true);
 
@@ -333,7 +334,7 @@ function startRecording() {
 function stopRecording() {
   if (!isRecording) return;
 
-  console.log("⏹️ Recording stopped.");
+  // console.log("⏹️ Recording stopped.");
   isRecording = false;
   updateTrayIcon(false);
 
@@ -347,7 +348,7 @@ function stopRecording() {
 
 // Helper to log to both console and renderer
 function logToRenderer(msg) {
-  console.log(msg);
+  // console.log(msg);
   mainWindow?.webContents.send("log", msg);
 }
 
@@ -613,18 +614,31 @@ function startUiohook() {
       if (isHotkeyPressed()) {
         if (!isRecording) {
           // Start Logic
-          console.log("⚡ Hotkey Pressed -> Starting...");
+          console.log(
+            `⚡ Hotkey Pressed (${CONFIG.triggerMode}) -> Starting...`
+          );
           startRecording();
           recordingStartTime = Date.now();
           isLatched = false; // Initially assume holding, will confirm on release
-        } else if (isLatched) {
+        } else if (
+          isLatched &&
+          (CONFIG.triggerMode === "hybrid" || CONFIG.triggerMode === "toggle")
+        ) {
           // Already recording and was latched (Toggle Mode) -> User pressed again to Stop
+          // 'hold' mode does not use latching, so it shouldn't hit this if logic is correct,
+          // but effectively pressing again in 'hold' mode while recording is just continuing to hold
           console.log(
             "⚡ Hotkey PRESSED (Latched) -> Stopping (Toggle Off)..."
           );
           stopRecording();
           handleRecordingComplete();
           isLatched = false;
+        } else if (CONFIG.triggerMode === "toggle") {
+          // In toggle mode, if we are recording (even if not latched, though it should always be latched in toggle)
+          // we stop.
+          console.log("⚡ Hotkey PRESSED (Toggle) -> Stopping...");
+          stopRecording();
+          handleRecordingComplete();
         }
       }
     } else if (e.type === 5) {
@@ -639,18 +653,30 @@ function startUiohook() {
       if (wasPressed && !isPressedNow && isRecording) {
         const duration = Date.now() - recordingStartTime;
 
-        if (!isLatched) {
-          if (duration < 500) {
-            // Short press (< 500ms) -> LATCH IT (Toggle Mode)
-            console.log(`⚡ Short Press (${duration}ms) -> Latching ON`);
-            isLatched = true;
-          } else {
-            // Long press (> 500ms) -> STOP (PTT Mode)
-            console.log(
-              `⚡ Long Press (${duration}ms) -> Stopping (PTT Release)...`
-            );
-            stopRecording();
-            handleRecordingComplete();
+        if (CONFIG.triggerMode === "toggle") {
+          // Toggle mode: Ignore KeyUp. We stop only on next KeyDown.
+          // ensure we mark as latched just in case
+          isLatched = true;
+        } else if (CONFIG.triggerMode === "hold") {
+          // Hold mode: Always stop on release
+          console.log(`⚡ Release (Hold Mode) -> Stopping...`);
+          stopRecording();
+          handleRecordingComplete();
+        } else {
+          // Hybrid Mode (Default)
+          if (!isLatched) {
+            if (duration < 500) {
+              // Short press (< 500ms) -> LATCH IT (Toggle Mode)
+              console.log(`⚡ Short Press (${duration}ms) -> Latching ON`);
+              isLatched = true;
+            } else {
+              // Long press (> 500ms) -> STOP (PTT Mode)
+              console.log(
+                `⚡ Long Press (${duration}ms) -> Stopping (PTT Release)...`
+              );
+              stopRecording();
+              handleRecordingComplete();
+            }
           }
         }
       }
@@ -674,6 +700,7 @@ function registerHotkey() {
 ipcMain.handle("get-config", () => {
   return {
     hotkey: CONFIG.hotkey,
+    triggerMode: CONFIG.triggerMode,
     autoPaste: CONFIG.autoPaste,
     language: CONFIG.language,
   };
@@ -713,14 +740,13 @@ ipcMain.handle("copy-to-clipboard", (event, text) => {
 });
 
 // Temporarily disable hotkey while user is recording a new one
-// Temporarily disable hotkey while user is recording a new one
 ipcMain.handle("set-recording-hotkey", (event, recordingState) => {
   if (recordingState) {
     isPaused = true;
-    console.log("⏸️ Hook paused for recording");
+    // console.log("⏸️ Hotkey temporarily disabled for recording");
   } else {
     isPaused = false;
-    console.log("▶️ Hook resumed");
+    // console.log("▶️ Hotkey re-enabled");
   }
 });
 
@@ -737,13 +763,14 @@ ipcMain.handle("set-hotkey", async (event, newHotkey) => {
 
     const configData = {
       hotkey: newHotkey,
+      triggerMode: CONFIG.triggerMode, // preserve
       language: CONFIG.language,
       autoPaste: CONFIG.autoPaste,
       model: CONFIG.model,
     };
 
     fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
-    console.log("💾 Config saved:", configPath);
+    // console.log("💾 Config saved:", configPath);
 
     // Re-register with new hotkey
     registerHotkey();
@@ -768,6 +795,33 @@ ipcMain.handle("set-hotkey", async (event, newHotkey) => {
   }
 });
 
+// Set trigger mode
+ipcMain.handle("set-trigger-mode", async (event, mode) => {
+  try {
+    CONFIG.triggerMode = mode;
+    console.log(`🔄 Trigger Mode set to: ${mode}`);
+
+    const configPath = app.isPackaged
+      ? path.join(process.resourcesPath, "config.json")
+      : path.join(__dirname, "..", "config.json");
+
+    const configData = {
+      hotkey: CONFIG.hotkey,
+      triggerMode: CONFIG.triggerMode,
+      language: CONFIG.language,
+      autoPaste: CONFIG.autoPaste,
+      model: CONFIG.model,
+    };
+
+    fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
+
+    return true;
+  } catch (e) {
+    console.error("Failed to set trigger mode:", e);
+    return false;
+  }
+});
+
 // Permission handlers
 ipcMain.handle("check-permissions", async () => {
   return await checkAllPermissions();
@@ -784,19 +838,21 @@ ipcMain.handle("open-settings", (event, pane) => {
 app.whenReady().then(async () => {
   // Load configuration from config.json
   CONFIG = loadConfig();
-  console.log(`🎯 Hotkey: ${CONFIG.hotkey}`);
-  console.log(`🌐 Language: ${CONFIG.language}`);
-  console.log(`📋 Auto-paste: ${CONFIG.autoPaste}`);
-  console.log(`🔊 Audio device: ${CONFIG.audioDevice}`);
+  // console.log("Hotkey registered:", CONFIG.hotkey);
+  // console.log(`🎯 Hotkey: ${CONFIG.hotkey}`);
+  // console.log(`🎮 Mode: ${CONFIG.triggerMode}`);
+  // console.log(`🌐 Language: ${CONFIG.language}`);
+  // console.log(`📋 Auto-paste: ${CONFIG.autoPaste}`);
+  // console.log(`🔊 Audio device: ${CONFIG.audioDevice}`);
 
   // Check permissions on startup
   const permissions = await checkAllPermissions();
 
   if (!permissions.microphone) {
-    console.log("⚠️ Microphone permission not granted!");
+    // console.log("⚠️ Microphone permission not granted!");
   }
   if (!permissions.accessibility) {
-    console.log("⚠️ Accessibility permission not granted!");
+    // console.log("⚠️ Accessibility permission not granted!");
   }
 
   createWindow();

@@ -572,4 +572,106 @@ h1 {
 .log-entry.info .log-icon { color: var(--text-tertiary); }
 .log-entry.success .log-icon { color: var(--success); }
 .log-entry.error .log-icon { color: var(--error); }
-.log-entry.recording .log-icon { color: var(--recording); }
+
+/* Segmented Control */
+.segmented-control-container {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.segmented-control {
+  display: flex;
+  background: var(--bg-tertiary);
+  padding: 4px;
+  border-radius: 8px;
+  gap: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.segment-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.segment-btn:hover {
+  color: var(--text-primary);
+}
+
+.segment-btn.active {
+  background: white;
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Controls Suite */
+.controls-suite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  -webkit-app-region: no-drag;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.control-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 2px;
+}
+
+.divider-vertical {
+  width: 1px;
+  height: 40px;
+  background: var(--border-subtle);
+}
+
+/* Override/Refine internals */
+.shortcut-input-button {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  justify-content: center;
+  border-color: transparent;
+  background: var(--bg-secondary);
+  height: 32px;
+}
+
+.shortcut-input-button:hover {
+  background: var(--bg-tertiary);
+}
+
+.segmented-control {
+  background: var(--bg-secondary);
+  height: 32px;
+}
+
+.segment-btn {
+  padding: 0 8px; /* Slightly tighter */
+  height: 100%;
+}

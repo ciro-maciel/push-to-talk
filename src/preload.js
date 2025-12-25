@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("api", {
   setHotkey: (hotkey) => ipcRenderer.invoke("set-hotkey", hotkey),
   setRecordingHotkey: (isRecording) =>
     ipcRenderer.invoke("set-recording-hotkey", isRecording),
+  setTriggerMode: (mode) => ipcRenderer.invoke("set-trigger-mode", mode),
 
   // Permission management
   checkPermissions: () => ipcRenderer.invoke("check-permissions"),

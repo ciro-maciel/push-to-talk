@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --enable-logging",
+    "dev": "electron .",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:mac:fast": "electron-builder --mac --dir",

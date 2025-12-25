@@ -69,17 +69,27 @@
         <p id="status-message">Carregando...</p>
       </div>
 
-      <div class="shortcut-container">
-        <label class="shortcut-label">Atalho de Captura</label>
-        <button id="shortcut-trigger" class="shortcut-input-button" title="Clique para alterar">
-          <div class="shortcut-content">
-            <span id="current-keys" class="keys">⌘⇧Space</span>
-            <span id="recording-text" class="recording-text hidden">Pressione o novo atalho...</span>
-          </div>
-          <div class="shortcut-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M6 12h.001"/><path d="M10 12h.001"/><path d="M14 12h.001"/><path d="M18 12h.001"/><path d="M7 16h10"/></svg>
-          </div>
-        </button>
+      <div class="controls-suite">
+        <div class="control-group">
+          <label class="control-label">Atalho</label>
+          <button id="shortcut-trigger" class="shortcut-input-button" title="Clique para alterar">
+            <div class="shortcut-content">
+              <span id="current-keys" class="keys">⌘⇧Space</span>
+              <span id="recording-text" class="recording-text hidden">Gravando...</span>
+            </div>
+          </button>
+        </div>
+        
+        <div class="divider-vertical"></div>
+
+        <div class="control-group">
+           <label class="control-label">Modo</label>
+           <div class="segmented-control">
+             <button class="segment-btn" data-mode="hybrid" title="Toque para alternar, segure para falar">Híbrido</button>
+             <button class="segment-btn" data-mode="toggle" title="Sempre alternar">Alternar</button>
+             <button class="segment-btn" data-mode="hold" title="Sempre segurar para falar">Segurar</button>
+           </div>
+        </div>
       </div>
 
       <div id="transcription-container" class="transcription-container hidden">

@@ -10,6 +10,7 @@ const statusMessage = document.getElementById("status-message");
 const shortcutBtn = document.getElementById("shortcut-trigger");
 const currentKeysDisplay = document.getElementById("current-keys");
 const recordingText = document.getElementById("recording-text");
+// const triggerModeSelect = document.getElementById("trigger-mode-select"); // Removed
 
 const copyLogBtn = document.getElementById("copy-log-btn");
 const transcriptionContainer = document.getElementById(
@@ -36,8 +37,46 @@ async function init() {
   const config = await window.api.getConfig();
   currentHotkey = config.hotkey;
   updateHotkeyDisplay(config.hotkey);
+
+  if (config.triggerMode) {
+    updateSegmentUI(config.triggerMode);
+  }
+
   setStatus("ready", `Pronto! Pressione o atalho para gravar`);
   log("Push to Talk iniciado e pronto.");
+}
+
+function updateSegmentUI(activeMode) {
+  const segments = document.querySelectorAll(".segment-btn");
+  segments.forEach((btn) => {
+    if (btn.dataset.mode === activeMode) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+}
+
+// Event listener for segments
+const segmentContainer = document.querySelector(".segmented-control");
+if (segmentContainer) {
+  segmentContainer.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".segment-btn");
+    if (!btn) return;
+
+    const mode = btn.dataset.mode;
+
+    // Optimistic UI update
+    updateSegmentUI(mode);
+
+    const success = await window.api.setTriggerMode(mode);
+    if (success) {
+      log(`🔄 Modo alterado para: ${mode}`);
+    } else {
+      log("❌ Falha ao alterar modo", "error");
+      // Revert if needed (omitted for simplicity as it rarely fails)
+    }
+  });
 }
 
 async function checkAndShowPermissions() {
