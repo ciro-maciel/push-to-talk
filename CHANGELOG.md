@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.0.1...v1.1.0) (2025-12-25)
+
+
+### Features
+
+* Implement direct text insertion instead of clipboard paste and add Linux build dependencies for input handling. ([d3e7d39](https://github.com/ciro-maciel/push-to-talk/commit/d3e7d390b2e00900241c69c149b33b611205943b))
+
 ## [1.0.1](https://github.com/ciro-maciel/push-to-talk/compare/v1.0.0...v1.0.1) (2025-12-25)
 
 
