@@ -36,7 +36,6 @@
         "from": "whisper.cpp/models/ggml-tiny.bin",
         "to": "models/ggml-tiny.bin"
       },
-
       {
         "from": "config.json",
         "to": "config.json"
@@ -45,7 +44,10 @@
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "assets/icon.icns",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "hardenedRuntime": false,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
@@ -54,11 +56,17 @@
       }
     },
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "assets/icon.ico"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "assets/icon.png",
       "category": "Utility"
     }
@@ -78,6 +86,7 @@
     "electron-builder": "^25.0.0"
   },
   "dependencies": {
-    "clipboardy": "^4.0.0"
+    "clipboardy": "^4.0.0",
+    "electron-mac-permissions": "^2.2.2"
   }
 }

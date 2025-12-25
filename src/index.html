@@ -5,27 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline';"
+      content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
     />
     <title>Push to Talk</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <div class="icon">🎙️</div>
+        <!-- <div class="icon">🎙️</div> -->
         <h1>Push to Talk</h1>
       </div>
 
-      <!-- Permission Warning -->
-      <div id="permission-warning" class="permission-warning hidden">
-        <p>⚠️ Permissões necessárias:</p>
-        <div class="permission-buttons">
-          <button id="mic-permission" class="permission-btn hidden">
-            🎤 Microfone
-          </button>
-          <button id="accessibility-permission" class="permission-btn hidden">
-            ♿ Acessibilidade
+      <!-- Permission Modal -->
+      <div id="permission-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <h2 class="modal-title">⚠️ Permissões Necessárias</h2>
+          <p class="modal-description">
+            O aplicativo precisa de acesso para ouvir e colar texto.
+          </p>
+
+          <div class="permission-steps">
+            <div id="step-mic" class="step-item">
+              <div class="step-icon">🎤</div>
+              <div class="step-info">
+                <strong>Microfone</strong>
+                <p>
+                  Menu Apple > Ajustes do Sistema > Privacidade e Segurança >
+                  Microfone
+                </p>
+              </div>
+              <button id="btn-open-mic-settings" class="step-action">
+                Abrir
+              </button>
+            </div>
+
+            <div id="step-accessibility" class="step-item">
+              <div class="step-icon">♿</div>
+              <div class="step-info">
+                <strong>Acessibilidade</strong>
+                <p>
+                  Menu Apple > Ajustes do Sistema > Privacidade e Segurança >
+                  Acessibilidade
+                </p>
+              </div>
+              <button id="btn-open-accessibility-settings" class="step-action">
+                Abrir
+              </button>
+            </div>
+          </div>
+
+          <button id="btn-check-permissions" class="primary-btn">
+            Verificar Novamente
           </button>
         </div>
       </div>
@@ -58,14 +92,24 @@
         <p>Pressione novamente para transcrever</p>
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-        <span style="font-size: 11px; color: #666;">Logs:</span>
-        <button id="copy-log-btn" style="background: #333; border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">Copiar Logs</button>
+      <div class="logs-wrapper">
+        <div class="logs-header" id="logs-header">
+          <button id="toggle-logs-btn" class="toggle-logs-btn">
+            <span id="toggle-icon">▶</span>
+            <span class="label">Logs</span>
+          </button>
+          <button id="copy-log-btn" class="copy-btn" title="Copiar logs">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copiar
+          </button>
+        </div>
+        <div id="logs-container" class="logs-container hidden">
+          <div id="debug-log-list" class="debug-log-list"></div>
+        </div>
       </div>
-      <div id="debug-log" class="debug-log" style="font-size: 11px; color: #aaa; margin-top: 5px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; background: #1a1a1a; padding: 10px; border-radius: 4px; border: 1px solid #333; user-select: text; -webkit-user-select: text;"></div>
       
       <div class="footer">
-        <p>Powered by whisper.cpp</p>
+        <p>Powered by <a href="https://www.linkedin.com/in/ciromaciel/">Ciro Cesar Maciel</a></p>
       </div>
     </div>
 

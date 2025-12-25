@@ -21,6 +21,9 @@ import { spawn, exec } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import permissions from "electron-mac-permissions";
+const { getAuthStatus, askForMicrophoneAccess, askForAccessibilityAccess } =
+  permissions;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,17 +113,17 @@ let isRecording = false;
 async function checkMicrophonePermission() {
   if (process.platform !== "darwin") return true;
 
-  const status = systemPreferences.getMediaAccessStatus("microphone");
+  const status = getAuthStatus("microphone");
   console.log("🎤 Microphone permission status:", status);
 
-  if (status === "granted") {
+  if (status === "authorized") {
     return true;
   }
 
-  if (status === "not-determined") {
+  if (status === "not determined") {
     // Request permission
-    const granted = await systemPreferences.askForMediaAccess("microphone");
-    return granted;
+    const granted = await askForMicrophoneAccess();
+    return granted === "authorized";
   }
 
   // denied or restricted
@@ -130,9 +133,17 @@ async function checkMicrophonePermission() {
 function checkAccessibilityPermission() {
   if (process.platform !== "darwin") return true;
 
-  const trusted = systemPreferences.isTrustedAccessibilityClient(false);
-  console.log("♿ Accessibility permission:", trusted ? "granted" : "denied");
-  return trusted;
+  const status = getAuthStatus("accessibility");
+  console.log("♿ Accessibility permission status:", status);
+
+  if (status === "authorized") {
+    return true;
+  }
+
+  // If not authorized, trust status might be needed or we can prompt
+  // But for simple check, 'authorized' is what we want.
+  // Note: getAuthStatus for accessibility might return 'denied' even if just not enabled in preferences.
+  return false;
 }
 
 async function checkAllPermissions() {
@@ -149,13 +160,9 @@ async function checkAllPermissions() {
 function openSystemPreferences(pane) {
   if (process.platform === "darwin") {
     if (pane === "microphone") {
-      shell.openExternal(
-        "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
-      );
+      askForMicrophoneAccess();
     } else if (pane === "accessibility") {
-      shell.openExternal(
-        "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-      );
+      askForAccessibilityAccess();
     }
   }
 }

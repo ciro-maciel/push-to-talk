@@ -15,11 +15,14 @@ const transcriptionContainer = document.getElementById(
 );
 const transcriptionText = document.getElementById("transcription-text");
 const playAudioBtn = document.getElementById("play-audio-btn");
-const permissionWarning = document.getElementById("permission-warning");
-const micPermissionBtn = document.getElementById("mic-permission");
-const accessibilityPermissionBtn = document.getElementById(
-  "accessibility-permission"
+const permissionModal = document.getElementById("permission-modal");
+const btnOpenMic = document.getElementById("btn-open-mic-settings");
+const btnOpenAccessibility = document.getElementById(
+  "btn-open-accessibility-settings"
 );
+const btnCheckPermissions = document.getElementById("btn-check-permissions");
+const stepMic = document.getElementById("step-mic");
+const stepAccessibility = document.getElementById("step-accessibility");
 
 let isRecordingHotkey = false;
 let currentHotkey = "";
@@ -36,49 +39,82 @@ async function init() {
 
 async function checkAndShowPermissions() {
   const permissions = await window.api.checkPermissions();
-  let needsPermissions = false;
+  let allGranted = true;
 
-  if (!permissions.microphone) {
-    micPermissionBtn.classList.remove("hidden");
-    needsPermissions = true;
+  // Update Microphone Step
+  if (permissions.microphone) {
+    stepMic.classList.add("success");
+    stepMic.querySelector(".step-icon").textContent = "✅";
+    stepMic.querySelector(".step-action").classList.add("hidden");
+  } else {
+    stepMic.classList.remove("success");
+    stepMic.querySelector(".step-icon").textContent = "🎤";
+    stepMic.querySelector(".step-action").classList.remove("hidden");
+    allGranted = false;
   }
 
-  if (!permissions.accessibility) {
-    accessibilityPermissionBtn.classList.remove("hidden");
-    needsPermissions = true;
+  // Update Accessibility Step
+  if (permissions.accessibility) {
+    stepAccessibility.classList.add("success");
+    stepAccessibility.querySelector(".step-icon").textContent = "✅";
+    stepAccessibility.querySelector(".step-action").classList.add("hidden");
+  } else {
+    stepAccessibility.classList.remove("success");
+    stepAccessibility.querySelector(".step-icon").textContent = "♿";
+    stepAccessibility.querySelector(".step-action").classList.remove("hidden");
+    allGranted = false;
   }
 
-  if (needsPermissions) {
-    permissionWarning.classList.remove("hidden");
+  if (!allGranted) {
+    permissionModal.classList.remove("hidden");
     setStatus("error", "Permissões necessárias!");
   } else {
-    permissionWarning.classList.add("hidden");
+    permissionModal.classList.add("hidden");
   }
 
   return permissions;
 }
 
-micPermissionBtn.addEventListener("click", () =>
+btnOpenMic.addEventListener("click", () =>
   window.api.openSettings("microphone")
 );
-accessibilityPermissionBtn.addEventListener("click", () =>
+btnOpenAccessibility.addEventListener("click", () =>
   window.api.openSettings("accessibility")
 );
+btnCheckPermissions.addEventListener("click", async () => {
+  const permissions = await checkAndShowPermissions();
+  if (permissions.allGranted) {
+    setStatus("ready", "Permissões concedidas! Pronto para uso.");
+  }
+});
+
+const logsHeader = document.getElementById("logs-header");
+const logsWrapper = document.querySelector(".logs-wrapper");
+
+if (logsHeader) {
+  logsHeader.addEventListener("click", (e) => {
+    // Prevent toggle when clicking copy button
+    if (e.target.closest("#copy-log-btn")) return;
+    logsWrapper.classList.toggle("expanded");
+  });
+}
 
 if (copyLogBtn) {
   copyLogBtn.addEventListener("click", async () => {
-    const logText = document.getElementById("debug-log").innerText;
+    if (logData.length === 0) return;
+
+    const formattedLogs = logData
+      .map((l) => `[${l.timestamp}] ${l.type.toUpperCase()}: ${l.message}`)
+      .join("\n");
+
     try {
-      await window.api.copyToClipboard(logText);
-      const originalText = copyLogBtn.innerText;
-      copyLogBtn.innerText = "Copiado!";
-      setTimeout(() => (copyLogBtn.innerText = originalText), 2000);
+      await window.api.copyToClipboard(formattedLogs);
+      const originalHtml = copyLogBtn.innerHTML;
+      copyLogBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copiado!`;
+      setTimeout(() => (copyLogBtn.innerHTML = originalHtml), 2000);
     } catch (err) {
       console.error("Clipboard error:", err);
-      // Fallback
-      navigator.clipboard
-        .writeText(logText)
-        .catch((e) => setStatus("error", "Erro ao copiar"));
+      navigator.clipboard.writeText(formattedLogs).catch(console.error);
     }
   });
 }
@@ -417,13 +453,59 @@ document.addEventListener("keydown", async (event) => {
 });
 
 // Debug log
-function log(msg) {
-  const el = document.getElementById("debug-log");
-  if (el) {
-    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
-    el.scrollTop = el.scrollHeight;
+// Log Logic
+const logData = [];
+const logsList = document.getElementById("debug-log-list");
+
+function log(msg, explicitType = null) {
+  let type = explicitType || "info";
+
+  // Auto-detect type if not explicit
+  if (!explicitType) {
+    if (msg.includes("🎤") || msg.includes("recording")) type = "recording";
+    else if (msg.includes("✅") || msg.includes("success")) type = "success";
+    else if (msg.includes("❌") || msg.includes("error")) type = "error";
+    else if (msg.includes("⚠️")) type = "info";
   }
-  console.log(msg);
+
+  // Strip emojis for clean display
+  const cleanMsg = msg.replace(/^[🎤⏹️⚠️✅📊🎯🔊❌📤🤖▶️]\s*/u, "").trim();
+  const timestamp = new Date().toLocaleTimeString();
+
+  logData.push({ timestamp, message: cleanMsg, type });
+
+  // Render to DOM
+  if (logsList) {
+    const entry = document.createElement("div");
+    entry.className = `log-entry ${type}`;
+
+    let iconSvg = "";
+    // SVG Icons
+    if (type === "recording") {
+      // Red Recording Dot
+      iconSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/></svg>`;
+    } else if (type === "success") {
+      // Check
+      iconSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    } else if (type === "error") {
+      // X
+      iconSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+    } else {
+      // Info (i)
+      iconSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+    }
+
+    entry.innerHTML = `
+      <span class="log-icon">${iconSvg}</span>
+      <span class="log-time">${timestamp}</span>
+      <span class="log-message">${cleanMsg}</span>
+    `;
+
+    logsList.appendChild(entry);
+    logsList.scrollTop = logsList.scrollHeight;
+  }
+
+  console.log(`[${type}] ${cleanMsg}`);
 }
 
 // IPC Triggers
