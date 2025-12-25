@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.4.0...v1.5.0) (2025-12-25)
+
+
+### Features
+
+* Add header subtitle, refine header styling, and include macOS security warning instructions in README. ([82f5f0d](https://github.com/ciro-maciel/push-to-talk/commit/82f5f0d11fc9da782bf33b0d182ce798d738987e))
+
 # [1.4.0](https://github.com/ciro-maciel/push-to-talk/compare/v1.3.2...v1.4.0) (2025-12-25)
 
 
