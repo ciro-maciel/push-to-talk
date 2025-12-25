@@ -104,5 +104,8 @@
     "electron-mac-permissions": "^2.2.2",
     "electron-store": "^11.0.2",
     "uiohook-napi": "^1.5.4"
-  }
+  },
+  "trustedDependencies": [
+    "uiohook-napi"
+  ]
 }

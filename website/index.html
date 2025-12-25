@@ -1,85 +1,442 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Push to Talk - Transcrição de voz 100% local e privada. Sem API, sem internet, sem custos.">
-  <meta name="keywords" content="push to talk, transcrição, voz, whisper, local, privado, speech to text">
+  <meta name="description" content="Push to Talk - Transcreva sua voz em texto instantaneamente. 100% local, 100% privado. Sem internet, sem custos, sem limites.">
+  <meta name="keywords" content="push to talk, transcrição, voz, whisper, local, privado, speech to text, offline">
   <meta name="author" content="Ciro Maciel">
   
-  <title>Push to Talk - Transcrição de voz 100% local</title>
+  <title>Push to Talk - Transcrição de voz 100% local e privada</title>
   
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/png" href="assets/images/favicon.png">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Montserrat', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
   
   <!-- Open Graph -->
   <meta property="og:title" content="Push to Talk - Transcrição de voz 100% local">
-  <meta property="og:description" content="Transcreva sua voz localmente, sem internet, com privacidade total.">
+  <meta property="og:description" content="Transcreva sua voz em texto instantaneamente. 100% local, 100% privado.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://ciro-maciel.github.io/push-to-talk">
 </head>
-<body>
-  <header class="hero">
-    <nav class="nav">
-      <div class="nav__logo">🎙️ Push to Talk</div>
-      <div class="nav__links">
-        <a href="#features">Features</a>
-        <a href="#download">Download</a>
-        <a href="https://github.com/ciro-maciel/push-to-talk" target="_blank">GitHub</a>
-      </div>
-    </nav>
-    
-    <div class="hero__content">
-      <h1 class="hero__title">Transcrição de voz<br><span class="hero__highlight">100% local e privada</span></h1>
-      <p class="hero__subtitle">Pressione e fale. Solte para transcrever. Sem internet, sem API, sem custos.</p>
-      <a href="#download" class="hero__cta">Download Grátis</a>
-    </div>
-  </header>
 
-  <section id="features" class="features">
-    <h2 class="section__title">Por que Push to Talk?</h2>
-    <div class="features__grid">
-      <div class="feature">
-        <span class="feature__icon">🔒</span>
-        <h3 class="feature__title">100% Privado</h3>
-        <p class="feature__description">Nenhum dado sai do seu computador. Transcrição completamente offline.</p>
+<body class="font-sans bg-white text-gray-900 antialiased">
+  
+  <!-- Navigation -->
+  <nav class="border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14 sm:h-16">
+        <a href="#" class="flex items-center gap-2 font-semibold text-gray-900">
+          <img src="assets/images/logo.png" alt="Push to Talk" class="w-6 h-6">
+          <span class="hidden sm:inline">Push to Talk</span>
+        </a>
+        <div class="flex items-center gap-4 sm:gap-8">
+          <a href="#como-funciona" class="text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap">Como funciona</a>
+          <a href="#por-que" class="text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap">Por que usar</a>
+          <a href="#download" class="text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Download</a>
+          <a href="https://github.com/ciro-maciel/push-to-talk" target="_blank" class="hidden sm:inline text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">GitHub</a>
+        </div>
       </div>
-      <div class="feature">
-        <span class="feature__icon">⚡</span>
-        <h3 class="feature__title">Ultra Rápido</h3>
-        <p class="feature__description">Inferência em C++ nativo. Sem latência de cloud.</p>
-      </div>
-      <div class="feature">
-        <span class="feature__icon">💸</span>
-        <h3 class="feature__title">Zero Custos</h3>
-        <p class="feature__description">Sem assinatura, sem API keys, sem limites de uso.</p>
-      </div>
-      <div class="feature">
-        <span class="feature__icon">🖥️</span>
-        <h3 class="feature__title">Multi-Plataforma</h3>
-        <p class="feature__description">Disponível para macOS, Windows e Linux.</p>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="py-24 lg:py-32">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        
+        <!-- Content -->
+        <div>
+          <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-8">
+            Transcreva sua voz em texto.<br>
+            Sem enviar nada para a nuvem.
+          </h1>
+          
+          <p class="text-xl text-gray-500 font-medium leading-relaxed mb-6">
+            Push to Talk é uma ferramenta de transcrição de voz que roda 100% no seu computador. Você pressiona uma tecla, fala, e o texto aparece onde seu cursor está. Simples assim.
+          </p>
+          
+          <p class="text-lg text-gray-500 leading-relaxed mb-10">
+            Diferente de outras soluções que enviam seu áudio para servidores externos, aqui tudo acontece localmente. Seu áudio nunca sai da sua máquina. A transcrição usa o modelo Whisper da OpenAI, compilado em C++ para rodar nativamente no seu hardware.
+          </p>
+          
+          <div class="flex flex-col sm:flex-row gap-4 mb-12">
+            <a href="#download" class="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors">
+              Baixar gratuitamente
+            </a>
+            <a href="#como-funciona" class="inline-flex items-center justify-center px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors">
+              Ver como funciona
+            </a>
+          </div>
+          
+          <!-- Key facts -->
+          <div class="grid sm:grid-cols-3 gap-6 pt-8 border-t border-gray-200">
+            <div>
+              <p class="text-sm font-semibold text-gray-900 mb-1">100% offline</p>
+              <p class="text-sm text-gray-500">Funciona sem internet</p>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-gray-900 mb-1">Open source</p>
+              <p class="text-sm text-gray-500">MIT License</p>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-gray-900 mb-1">Multiplataforma</p>
+              <p class="text-sm text-gray-500">Mac, Windows, Linux</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Hero Image -->
+        <div class="relative">
+          <div class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+            <img 
+              src="assets/images/hero.jpg" 
+              alt="Push to Talk - Interface do aplicativo" 
+              class="w-full h-auto"
+            >
+          </div>
+        </div>
+        
       </div>
     </div>
   </section>
 
-  <section id="download" class="download">
-    <h2 class="section__title">Download</h2>
-    <div class="download__buttons">
-      <a href="https://github.com/ciro-maciel/push-to-talk/releases/latest" class="download__btn download__btn--primary">
-        ⬇️ Baixar Agora
-      </a>
-      <a href="https://github.com/ciro-maciel/push-to-talk" class="download__btn download__btn--secondary">
-        📦 Ver no GitHub
-      </a>
+  <!-- How it works -->
+  <section id="como-funciona" class="py-24 lg:py-32 bg-gray-50 border-t border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      
+      <div class="max-w-3xl mb-16">
+        <h2 class="text-3xl font-bold text-gray-900 tracking-tight mb-6">
+          Como funciona
+        </h2>
+        <p class="text-lg text-gray-500 leading-relaxed">
+          O Push to Talk funciona em qualquer aplicativo do seu sistema. Editores de texto, navegadores, apps de mensagem, IDEs — onde você puder digitar, você pode usar o Push to Talk.
+        </p>
+      </div>
+      
+      <div class="space-y-12">
+        
+        <div class="flex gap-8">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-sm font-semibold text-gray-900">1</div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Configure seu atalho</h3>
+            <p class="text-gray-500 leading-relaxed">
+              Por padrão, o atalho é a tecla <kbd class="px-2 py-0.5 bg-white border border-gray-200 rounded text-sm font-mono text-gray-700">Option ⌥</kbd> no Mac ou <kbd class="px-2 py-0.5 bg-white border border-gray-200 rounded text-sm font-mono text-gray-700">Alt</kbd> no Windows/Linux. Você pode mudar para qualquer combinação que preferir nas configurações do app.
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex gap-8">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-sm font-semibold text-gray-900">2</div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Pressione e fale</h3>
+            <p class="text-gray-500 leading-relaxed">
+              Quando precisar transcrever, mantenha a tecla pressionada e fale normalmente. O app começa a gravar seu áudio imediatamente. Fale em português, inglês, espanhol, ou qualquer um dos mais de 90 idiomas suportados pelo Whisper.
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex gap-8">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-sm font-semibold text-gray-900">3</div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Solte e o texto aparece</h3>
+            <p class="text-gray-500 leading-relaxed">
+              Quando você solta a tecla, o áudio é processado localmente pelo Whisper.cpp e o texto resultante é inserido diretamente no campo onde seu cursor está. Não é copiado para a área de transferência — ele simplesmente aparece como se você tivesse digitado.
+            </p>
+          </div>
+        </div>
+        
+      </div>
     </div>
-    <p class="download__note">Disponível para macOS, Windows e Linux</p>
   </section>
 
-  <footer class="footer">
-    <p>Feito com ❤️ por <a href="https://github.com/ciro-maciel" target="_blank">Ciro Maciel</a></p>
-    <p class="footer__license">MIT License</p>
+  <!-- Why use it -->
+  <section id="por-que" class="py-24 lg:py-32">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      
+      <div class="max-w-3xl mb-16">
+        <h2 class="text-3xl font-bold text-gray-900 tracking-tight mb-6">
+          Por que usar o Push to Talk
+        </h2>
+        <p class="text-lg text-gray-500 leading-relaxed">
+          Existem muitas ferramentas de transcrição. Mas a maioria delas funciona enviando seu áudio para a nuvem. Isso significa latência, custos recorrentes, e — principalmente — seus dados passando por servidores de terceiros.
+        </p>
+      </div>
+      
+      <div class="grid lg:grid-cols-2 gap-8">
+        
+        <div class="p-8 bg-white rounded-xl border border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Privacidade real</h3>
+          <p class="text-gray-500 leading-relaxed">
+            Seu áudio nunca sai do seu computador. O modelo de IA roda localmente — não há requisições HTTP, não há upload de dados, não há telemetria. Quando você fecha o app, nada fica armazenado. Isso é especialmente importante se você trabalha com informações sensíveis, contratos, dados de clientes, ou simplesmente valoriza sua privacidade.
+          </p>
+        </div>
+        
+        <div class="p-8 bg-white rounded-xl border border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Velocidade nativa</h3>
+          <p class="text-gray-500 leading-relaxed">
+            O Whisper.cpp é uma implementação em C++ do modelo Whisper. Ele roda diretamente no seu processador — sem intermediários, sem latência de rede. Em um Mac com Apple Silicon, a transcrição de 10 segundos de áudio leva menos de 1 segundo. Você solta a tecla e o texto já está lá.
+          </p>
+        </div>
+        
+        <div class="p-8 bg-white rounded-xl border border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Sem custos recorrentes</h3>
+          <p class="text-gray-500 leading-relaxed">
+            APIs de transcrição cobram por minuto de áudio processado. Se você usa bastante, a conta cresce rápido. Push to Talk é gratuito — não há assinatura, não há créditos, não há limites. Use o dia inteiro, todos os dias, por anos. O custo é zero.
+          </p>
+        </div>
+        
+        <div class="p-8 bg-white rounded-xl border border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Funciona offline</h3>
+          <p class="text-gray-500 leading-relaxed">
+            Uma vez instalado, o Push to Talk não precisa de internet para funcionar. Você pode usar no avião, no metrô, em uma cafeteria sem Wi-Fi, ou em qualquer situação onde não há conexão. O modelo já está no seu computador.
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section class="py-24 lg:py-32 bg-gray-50 border-t border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      
+      <div class="max-w-3xl mb-16">
+        <h2 class="text-3xl font-bold text-gray-900 tracking-tight mb-6">
+          Comparando com alternativas
+        </h2>
+        <p class="text-lg text-gray-500 leading-relaxed">
+          Veja como o Push to Talk se compara com as soluções mais populares de transcrição de voz.
+        </p>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="py-4 pr-8 text-sm font-semibold text-gray-900">Recurso</th>
+              <th class="py-4 px-8 text-sm font-semibold text-gray-900">Push to Talk</th>
+              <th class="py-4 px-8 text-sm font-medium text-gray-500">Whisper API</th>
+              <th class="py-4 px-8 text-sm font-medium text-gray-500">Google Speech</th>
+              <th class="py-4 pl-8 text-sm font-medium text-gray-500">Otter.ai</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            <tr class="border-b border-gray-100">
+              <td class="py-4 pr-8 text-gray-900 font-medium">Processamento</td>
+              <td class="py-4 px-8 text-gray-900 font-medium">Local</td>
+              <td class="py-4 px-8 text-gray-500">Nuvem</td>
+              <td class="py-4 px-8 text-gray-500">Nuvem</td>
+              <td class="py-4 pl-8 text-gray-500">Nuvem</td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="py-4 pr-8 text-gray-900 font-medium">Privacidade</td>
+              <td class="py-4 px-8 text-gray-900 font-medium">Total</td>
+              <td class="py-4 px-8 text-gray-500">Dados enviados</td>
+              <td class="py-4 px-8 text-gray-500">Dados enviados</td>
+              <td class="py-4 pl-8 text-gray-500">Dados armazenados</td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="py-4 pr-8 text-gray-900 font-medium">Custo mensal</td>
+              <td class="py-4 px-8 text-gray-900 font-medium">Grátis</td>
+              <td class="py-4 px-8 text-gray-500">~$6/hora</td>
+              <td class="py-4 px-8 text-gray-500">~$1.44/hora</td>
+              <td class="py-4 pl-8 text-gray-500">$16.99+/mês</td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="py-4 pr-8 text-gray-900 font-medium">Funciona offline</td>
+              <td class="py-4 px-8 text-gray-900 font-medium">Sim</td>
+              <td class="py-4 px-8 text-gray-500">Não</td>
+              <td class="py-4 px-8 text-gray-500">Não</td>
+              <td class="py-4 pl-8 text-gray-500">Não</td>
+            </tr>
+            <tr>
+              <td class="py-4 pr-8 text-gray-900 font-medium">Código aberto</td>
+              <td class="py-4 px-8 text-gray-900 font-medium">Sim</td>
+              <td class="py-4 px-8 text-gray-500">Não</td>
+              <td class="py-4 px-8 text-gray-500">Não</td>
+              <td class="py-4 pl-8 text-gray-500">Não</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- Use cases -->
+  <section class="py-24 lg:py-32">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      
+      <div class="max-w-3xl mb-16">
+        <h2 class="text-3xl font-bold text-gray-900 tracking-tight mb-6">
+          Para quem é o Push to Talk
+        </h2>
+        <p class="text-lg text-gray-500 leading-relaxed">
+          Se você digita muito, provavelmente vai se beneficiar. Aqui estão alguns casos de uso comuns:
+        </p>
+      </div>
+      
+      <div class="grid lg:grid-cols-3 gap-8">
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Desenvolvedores</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Escreva comentários, documentação, mensagens de commit, respostas em pull requests, e qualquer texto que interrompa seu fluxo de código. Fale em vez de alternar contexto para digitar.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Escritores e jornalistas</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Capture ideias rapidamente, faça rascunhos de artigos, transcreva entrevistas. Sua mente pensa mais rápido que seus dedos — use a voz para acompanhar.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Profissionais de suporte</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Responda tickets, documente interações, escreva notas de follow-up. Economize tempo em tarefas repetitivas de escrita sem comprometer a qualidade.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Pessoas com RSI ou lesões</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Se digitar causa desconforto ou dor, a transcrição por voz pode ser uma alternativa para continuar produtivo enquanto descansa as mãos.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Quem trabalha com dados sensíveis</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Advogados, médicos, contadores — profissões onde a confidencialidade é crítica. Aqui, nenhum dado sai do seu computador.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Qualquer pessoa que digita muito</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            E-mails, mensagens, documentos, notas. Se você passa horas por dia digitando, considere quanto tempo pode economizar falando.
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="py-24 lg:py-32 bg-gray-50 border-t border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      
+      <div class="max-w-3xl mb-16">
+        <h2 class="text-3xl font-bold text-gray-900 tracking-tight mb-6">
+          Perguntas frequentes
+        </h2>
+      </div>
+      
+      <div class="max-w-3xl space-y-10">
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Qual a qualidade da transcrição?</h3>
+          <p class="text-gray-500 leading-relaxed">
+            O Push to Talk usa o modelo Whisper (base) da OpenAI, que é considerado um dos melhores modelos de transcrição disponíveis. A qualidade é excelente para português, inglês, e a maioria dos idiomas europeus. Para áudio claro sem muito ruído de fundo, a precisão geralmente está acima de 95%.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">O app funciona em segundo plano?</h3>
+          <p class="text-gray-500 leading-relaxed">
+            Sim. O Push to Talk roda na sua barra de menu (Mac) ou system tray (Windows/Linux). Ele fica sempre disponível esperando você pressionar o atalho, sem janelas abertas ocupando espaço.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Quanto espaço o app ocupa?</h3>
+          <p class="text-gray-500 leading-relaxed">
+            O aplicativo com o modelo Whisper incluído ocupa aproximadamente 150MB. Isso porque o modelo de IA precisa estar localmente no seu computador para funcionar offline.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">Funciona com qualquer microfone?</h3>
+          <p class="text-gray-500 leading-relaxed">
+            Sim. O app usa o microfone padrão do seu sistema. Pode ser o microfone integrado do laptop, um headset USB, AirPods, ou qualquer dispositivo de entrada de áudio que seu sistema operacional reconheça.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 mb-2">O código é realmente open source?</h3>
+          <p class="text-gray-500 leading-relaxed">
+            Sim. O código completo está disponível no GitHub sob licença MIT. Você pode auditar, modificar, e distribuir como quiser. Transparência total.
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section id="download" class="py-24 lg:py-32">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      
+      <div class="max-w-3xl">
+        <h2 class="text-3xl font-bold text-gray-900 tracking-tight mb-6">
+          Baixe o Push to Talk
+        </h2>
+        <p class="text-lg text-gray-500 leading-relaxed mb-10">
+          A instalação leva menos de um minuto. Baixe, abra, e comece a usar. Sem cadastro, sem configuração complexa.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 mb-10">
+          <a href="https://github.com/ciro-maciel/push-to-talk/releases/latest" class="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors">
+            Baixar última versão
+          </a>
+          <a href="https://github.com/ciro-maciel/push-to-talk" target="_blank" class="inline-flex items-center justify-center px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors">
+            Ver código no GitHub
+          </a>
+        </div>
+        
+        <p class="text-sm text-gray-500">
+          Disponível para macOS (Intel e Apple Silicon), Windows 10/11, e Linux (Debian/Ubuntu). 
+          Licença MIT — gratuito para uso pessoal e comercial.
+        </p>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 border-t border-gray-200">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <img src="assets/images/logo.png" alt="Push to Talk" class="w-5 h-5">
+          <p class="text-sm text-gray-500">Push to Talk — Transcrição de voz 100% local</p>
+        </div>
+        <p class="text-sm text-gray-500">
+          Feito por <a href="https://github.com/ciro-maciel" target="_blank" class="font-medium text-gray-700 hover:text-gray-900">Ciro Maciel</a> · MIT License
+        </p>
+      </div>
+    </div>
   </footer>
 
-  <script src="js/main.js"></script>
 </body>
 </html>
