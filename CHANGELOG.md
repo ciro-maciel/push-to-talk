@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/ciro-maciel/push-to-talk/compare/v1.3.1...v1.3.2) (2025-12-25)
+
+
+### Bug Fixes
+
+* add libxrandr-dev for Linux uiohook build ([d937af0](https://github.com/ciro-maciel/push-to-talk/commit/d937af01b8aec3030e605608684209de0439343d))
+
 ## [1.3.1](https://github.com/ciro-maciel/push-to-talk/compare/v1.3.0...v1.3.1) (2025-12-25)
 
 
