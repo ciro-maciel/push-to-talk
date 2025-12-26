@@ -143,6 +143,7 @@ let isRecording = false;
 
 // Hybrid PTT State
 let pressedKeys = new Set();
+let isExplicitQuit = false;
 let recordingStartTime = 0;
 let isLatched = false; // true if "Tapped" (latched on), false if "Holding"
 let isPaused = false; // To pause listener (e.g. when recording hotkey in UI)
@@ -292,8 +293,11 @@ function buildTrayMenu() {
     { type: "separator" },
     {
       label: "Sair",
-      accelerator: "CmdOrCtrl+Q",
-      click: () => app.quit(),
+      // accelerator: "CmdOrCtrl+Q", // Disabled to prevent global shortcut from triggering quit directly
+      click: () => {
+        isExplicitQuit = true;
+        app.quit();
+      },
     },
   ]);
 }
@@ -1167,8 +1171,13 @@ app.on("window-all-closed", () => {
   // Don't quit on window close, keep running in tray
 });
 
-app.on("before-quit", () => {
-  app.isQuitting = true;
+app.on("before-quit", (e) => {
+  if (isExplicitQuit) {
+    app.isQuitting = true;
+  } else {
+    e.preventDefault();
+    mainWindow?.hide();
+  }
 });
 
 app.on("will-quit", () => {
