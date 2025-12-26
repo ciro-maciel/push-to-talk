@@ -48,33 +48,48 @@ const __dirname = path.dirname(__filename);
 // ============================================================================
 
 function loadConfig() {
-  const configPath = app.isPackaged
-    ? path.join(process.resourcesPath, "config.json")
-    : path.join(__dirname, "..", "config.json");
+  // Migration: Try to read old config.json once if store is empty
+  const hasMigrated = store.get("migrated_from_json", false);
 
-  let userConfig = {};
+  if (!hasMigrated) {
+    const configPath = app.isPackaged
+      ? path.join(process.resourcesPath, "config.json")
+      : path.join(__dirname, "..", "config.json");
 
-  if (fs.existsSync(configPath)) {
-    try {
-      userConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      // console.log("✅ Config loaded from:", configPath);
-    } catch (err) {
-      console.error("⚠️ Failed to parse config.json:", err.message);
+    if (fs.existsSync(configPath)) {
+      try {
+        const userConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+
+        // Migrate known keys
+        if (userConfig.hotkey) store.set("hotkey", userConfig.hotkey);
+        if (userConfig.triggerMode)
+          store.set("triggerMode", userConfig.triggerMode);
+        if (userConfig.language) store.set("language", userConfig.language);
+        if (userConfig.autoPaste !== undefined)
+          store.set("autoPaste", userConfig.autoPaste);
+        if (userConfig.model) store.set("model", userConfig.model);
+        if (userConfig.audioDevice)
+          store.set("audioDevice", userConfig.audioDevice);
+
+        store.set("migrated_from_json", true);
+        log.info("Migration from config.json complete");
+      } catch (err) {
+        log.error("Failed to migrate config.json:", err.message);
+      }
     }
-  } else {
-    // console.log("⚠️ config.json not found, using defaults");
   }
 
   return {
-    hotkey: userConfig.hotkey || "CommandOrControl+Shift+Space",
-    triggerMode: userConfig.triggerMode || "hybrid", // hybrid, toggle, hold
-    language: userConfig.language || "pt",
-    prompt:
-      userConfig.prompt ||
-      "A frase pode conter termos técnicos em inglês, programação e desenvolvimento de software. Pontuação e formatação corretas.",
-    autoPaste: userConfig.autoPaste !== false,
-    model: userConfig.model || "tiny",
-    audioDevice: userConfig.audioDevice || "default",
+    hotkey: store.get("hotkey", "CommandOrControl+Shift+Space"),
+    triggerMode: store.get("triggerMode", "hybrid"), // hybrid, toggle, hold
+    language: store.get("language", "pt"),
+    prompt: store.get(
+      "prompt",
+      "A frase pode conter termos técnicos em inglês, programação e desenvolvimento de software. Pontuação e formatação corretas."
+    ),
+    autoPaste: store.get("autoPaste", true),
+    model: store.get("model", "tiny"),
+    audioDevice: store.get("audioDevice", "default"),
     audioFile: path.join(app.getPath("temp"), "recording.wav"),
     audio: {
       rate: 16000,
@@ -247,10 +262,6 @@ function buildTrayMenu() {
   return Menu.buildFromTemplate([
     {
       label: "Push to Talk",
-      enabled: false,
-    },
-    {
-      label: isRecording ? "● Gravando..." : "○ Pronto",
       enabled: false,
     },
     { type: "separator" },
@@ -991,24 +1002,19 @@ ipcMain.handle("set-recording-hotkey", (event, recordingState) => {
 // Set new hotkey and save to config
 ipcMain.handle("set-hotkey", async (event, newHotkey) => {
   try {
-    // Update config
+    // Update config object in memory
     CONFIG.hotkey = newHotkey;
 
-    // Save to config.json
-    const configPath = app.isPackaged
-      ? path.join(process.resourcesPath, "config.json")
-      : path.join(__dirname, "..", "config.json");
+    // Save to electron-store (UserData) instead of file in app bundle
+    store.set("hotkey", newHotkey);
 
-    const configData = {
-      hotkey: newHotkey,
-      triggerMode: CONFIG.triggerMode, // preserve
-      language: CONFIG.language,
-      autoPaste: CONFIG.autoPaste,
-      model: CONFIG.model,
-    };
+    // Also save other current config states to ensure they persist
+    store.set("triggerMode", CONFIG.triggerMode);
+    store.set("language", CONFIG.language);
+    store.set("autoPaste", CONFIG.autoPaste);
+    store.set("model", CONFIG.model);
 
-    fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
-    // console.log("💾 Config saved:", configPath);
+    log.info("Storage: Hotkey saved:", newHotkey);
 
     // Re-register with new hotkey
     registerHotkey();
@@ -1020,7 +1026,7 @@ ipcMain.handle("set-hotkey", async (event, newHotkey) => {
 
     return true;
   } catch (err) {
-    console.error("Failed to save hotkey:", err);
+    log.error("Failed to save hotkey:", err);
     return false;
   }
 });
@@ -1029,25 +1035,11 @@ ipcMain.handle("set-hotkey", async (event, newHotkey) => {
 ipcMain.handle("set-trigger-mode", async (event, mode) => {
   try {
     CONFIG.triggerMode = mode;
-    // console.log(`🔄 Trigger Mode set to: ${mode}`);
-
-    const configPath = app.isPackaged
-      ? path.join(process.resourcesPath, "config.json")
-      : path.join(__dirname, "..", "config.json");
-
-    const configData = {
-      hotkey: CONFIG.hotkey,
-      triggerMode: CONFIG.triggerMode,
-      language: CONFIG.language,
-      autoPaste: CONFIG.autoPaste,
-      model: CONFIG.model,
-    };
-
-    fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
-
+    store.set("triggerMode", mode);
+    log.info(`Storage: Trigger Mode set to: ${mode}`);
     return true;
   } catch (e) {
-    console.error("Failed to set trigger mode:", e);
+    log.error("Failed to set trigger mode:", e);
     return false;
   }
 });
