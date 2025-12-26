@@ -27,7 +27,8 @@ import Store from "electron-store";
 import pkg from "uiohook-napi";
 const { uIOhook, UiohookKey } = pkg;
 const uiohook = uIOhook;
-import { autoUpdater } from "electron-updater";
+import electronUpdater from "electron-updater";
+const { autoUpdater } = electronUpdater;
 import log from "electron-log";
 
 // Configure logging
