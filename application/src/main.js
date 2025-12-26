@@ -14,9 +14,9 @@ import {
   nativeImage,
   clipboard,
   Notification,
-  systemPreferences,
   shell,
   screen,
+  dialog,
 } from "electron";
 import { spawn, exec } from "node:child_process";
 import path from "node:path";
@@ -27,6 +27,13 @@ import Store from "electron-store";
 import pkg from "uiohook-napi";
 const { uIOhook, UiohookKey } = pkg;
 const uiohook = uIOhook;
+import { autoUpdater } from "electron-updater";
+import log from "electron-log";
+
+// Configure logging
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = "info";
+log.info("App starting...");
 const { getAuthStatus, askForMicrophoneAccess, askForAccessibilityAccess } =
   permissions;
 
@@ -1139,6 +1146,11 @@ app.whenReady().then(async () => {
   createTray();
   startUiohook(); // Start the global hook
 
+  // Check for updates
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -1164,3 +1176,58 @@ app.on("will-quit", () => {
 if (process.platform === "darwin") {
   app.dock?.hide();
 }
+
+// ============================================================================
+// AUTO-UPDATER EVENTS
+// ============================================================================
+
+autoUpdater.on("checking-for-update", () => {
+  log.info("Checking for update...");
+});
+
+autoUpdater.on("update-available", (info) => {
+  log.info("Update available:", info);
+  // Optionally notify user
+});
+
+autoUpdater.on("update-not-available", (info) => {
+  log.info("Update not available:", info);
+});
+
+autoUpdater.on("error", (err) => {
+  log.error("Error in auto-updater. " + err);
+});
+
+autoUpdater.on("download-progress", (progressObj) => {
+  let log_message = "Download speed: " + progressObj.bytesPerSecond;
+  log_message = log_message + " - Downloaded " + progressObj.percent + "%";
+  log_message =
+    log_message +
+    " (" +
+    progressObj.transferred +
+    "/" +
+    progressObj.total +
+    ")";
+  log.info(log_message);
+});
+
+autoUpdater.on("update-downloaded", (info) => {
+  log.info("Update downloaded");
+
+  // Create a dialog to ask the user to restart
+  const dialogOpts = {
+    type: "info",
+    buttons: ["Reiniciar", "Depois"],
+    title: "Atualização Disponível",
+    message:
+      process.platform === "win32" ? info.releaseNotes : info.releaseName,
+    detail:
+      "Uma nova versão foi baixada. Reinicie o aplicativo para aplicar as atualizações.",
+  };
+
+  dialog.showMessageBox(dialogOpts).then((returnValue) => {
+    if (returnValue.response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+});

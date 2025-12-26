@@ -101,8 +101,10 @@
   },
   "dependencies": {
     "clipboardy": "^4.0.0",
+    "electron-log": "^5.4.3",
     "electron-mac-permissions": "^2.2.2",
     "electron-store": "^11.0.2",
+    "electron-updater": "^6.6.2",
     "uiohook-napi": "^1.5.4"
   },
   "trustedDependencies": [
