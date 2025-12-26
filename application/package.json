@@ -31,17 +31,14 @@
     },
     "files": [
       "src/**/*",
-      "whisper.cpp/build/bin/whisper-cli",
+      "whisper.cpp/build/bin/whisper-cli*",
       "whisper.cpp/models/ggml-base.bin",
       "!whisper.cpp/.git",
       "!whisper.cpp/build/**/*.o",
       "!whisper.cpp/build/**/*.a"
     ],
     "extraResources": [
-      {
-        "from": "whisper.cpp/build/bin/whisper-cli",
-        "to": "whisper-cli"
-      },
+
       {
         "from": "whisper.cpp/models/ggml-base.bin",
         "to": "models/ggml-base.bin"
@@ -64,14 +61,26 @@
       "entitlementsInherit": "entitlements.mac.plist",
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Precisamos de acesso ao microfone para transcrever sua voz."
-      }
+      },
+      "extraResources": [
+        {
+          "from": "whisper.cpp/build/bin/whisper-cli",
+          "to": "whisper-cli"
+        }
+      ]
     },
     "win": {
       "target": [
         "nsis",
         "portable"
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "extraResources": [
+        {
+          "from": "whisper.cpp/build/bin/whisper-cli.exe",
+          "to": "whisper-cli.exe"
+        }
+      ]
     },
     "linux": {
       "target": [
@@ -80,7 +89,13 @@
       ],
       "icon": "assets/linux",
       "category": "Utility",
-      "desktop": "build/push-to-talk.desktop"
+      "desktop": "build/push-to-talk.desktop",
+      "extraResources": [
+        {
+          "from": "whisper.cpp/build/bin/whisper-cli",
+          "to": "whisper-cli"
+        }
+      ]
     }
   },
   "keywords": [
