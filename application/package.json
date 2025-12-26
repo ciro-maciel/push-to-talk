@@ -78,7 +78,7 @@
         "AppImage",
         "deb"
       ],
-      "icon": "assets/icon.png",
+      "icon": "assets/linux",
       "category": "Utility",
       "desktop": "build/push-to-talk.desktop"
     }
