@@ -31,6 +31,7 @@
     },
     "files": [
       "src/**/*",
+      "assets/**/*",
       "whisper.cpp/build/bin/whisper-cli*",
       "whisper.cpp/models/ggml-base.bin",
       "!whisper.cpp/.git",
