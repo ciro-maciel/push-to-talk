@@ -216,13 +216,13 @@ function openSystemPreferences(pane) {
 // Create tray icon from PNG file
 function createTrayIcon(isRecording = false) {
   // Use the ear icon PNG for tray
-  const iconPath = path.join(__dirname, "assets", "icons", "message-2.png");
+  const iconPath = path.join(__dirname, "../assets", "logo.png");
 
   let icon;
   if (fs.existsSync(iconPath)) {
     icon = nativeImage.createFromPath(iconPath);
     // Resize to 16x16 for tray (standard size)
-    icon = icon.resize({ width: 16, height: 16 });
+    icon = icon.resize({ width: 20, height: 20 });
   } else {
     // Fallback: create a simple circle icon
     const size = 16;
