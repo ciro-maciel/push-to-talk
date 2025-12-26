@@ -28,9 +28,46 @@ const btnCheckPermissions = document.getElementById("btn-check-permissions");
 const stepMic = document.getElementById("step-mic");
 const stepAccessibility = document.getElementById("step-accessibility");
 const autoLaunchToggle = document.getElementById("auto-launch-toggle");
+const modelSelect = document.getElementById("model-select");
+const modelInfoPanel = document.getElementById("model-info-panel");
+const modelDescription = document.getElementById("model-description");
+const modelActionBtn = document.getElementById("model-action-btn");
+const modelActionText = document.getElementById("model-action-text");
+const modelBtnSpinner = document.getElementById("model-btn-spinner");
+
+const downloadProgressContainer = document.getElementById(
+  "download-progress-container"
+);
+const downloadProgressBar = document.getElementById("download-progress-bar");
+const downloadStatusText = document.getElementById("download-status-text");
 
 let isRecordingHotkey = false;
 let currentHotkey = "";
+let availableModelsCache = [];
+
+// Model Metadata
+const MODEL_METADATA = {
+  tiny: "⚡ Ultra Rápido e Leve\nResposta quase instantânea. Ideal para comandos de voz curtos e frases simples.",
+  base: "⚖️ Balanceado (Padrão)\nO melhor equilíbrio para o dia a dia. Rápido o suficiente e com boa precisão para ditados gerais.",
+  small:
+    "🎯 Alta Precisão\nEntende nuances, sotaques e fala rápida muito melhor. Ótima escolha se o 'Base' estiver errando.",
+  medium:
+    "🧠 Qualidade Profissional\nTranscrição extremamente detalhada e fiel. Ideal para textos longos, artigos ou conteúdo técnico complexo.",
+  "large-v3-turbo":
+    "🚀 Inteligência Máxima\nO modelo mais avançado disponível. Capacidade de compreensão superior, quase humana.",
+};
+
+function getModelDescription(name) {
+  // Default description if not found
+  if (MODEL_METADATA[name]) return MODEL_METADATA[name];
+
+  if (name.includes("q5"))
+    return "Versão quantizada (mais leve) do modelo. Menor consumo de memória.";
+  if (name.includes(".en"))
+    return "Modelo otimizado apenas para o idioma Inglês.";
+
+  return "Modelo de transcrição Whisper.";
+}
 
 // Initialize
 async function init() {
@@ -77,6 +114,48 @@ async function init() {
         autoLaunchToggle.checked = !enabled;
       }
     });
+  }
+
+  // Initialize Models
+  await loadModels(config.model);
+
+  // Model download progress listener
+  window.api.onModelDownloadProgress((data) => {
+    // UI Update logic
+    if (downloadProgressContainer.classList.contains("hidden")) {
+      downloadProgressContainer.classList.remove("hidden");
+    }
+
+    downloadProgressBar.style.width = `${data.progress}%`;
+    downloadStatusText.textContent = `Baixando ${data.model}... ${Math.round(
+      data.progress
+    )}%`;
+
+    if (data.progress >= 100) {
+      setTimeout(() => {
+        downloadProgressContainer.classList.add("hidden");
+        downloadStatusText.textContent = "";
+
+        // Finalize
+        unlockModelUI();
+
+        log(`✅ Modelo ${data.model} baixado!`);
+        setStatus("ready", `Modelo ${data.model} pronto!`);
+
+        // Refresh to update button state to "Select"
+        loadModels(data.model);
+      }, 1000);
+    }
+  });
+
+  if (modelSelect) {
+    modelSelect.addEventListener("change", (e) => {
+      updateModelInfoUI(e.target.value);
+    });
+  }
+
+  if (modelActionBtn) {
+    modelActionBtn.addEventListener("click", handleModelAction);
   }
 
   // Hide loading screen with smooth transition
@@ -177,7 +256,7 @@ btnOpenAccessibility.addEventListener("click", () =>
 );
 btnCheckPermissions.addEventListener("click", async () => {
   const permissions = await checkAndShowPermissions();
-  if (permissions.allGranted) {
+  if (permissions.microphone && permissions.accessibility) {
     setStatus("ready", "Permissões concedidas! Pronto para uso.");
   }
 });
@@ -255,6 +334,144 @@ function updateHotkeyDisplay(hotkey) {
 function setStatus(state, message) {
   statusIndicator.className = "status-indicator " + state;
   statusMessage.textContent = message;
+}
+
+async function loadModels(activeModelName) {
+  try {
+    const models = await window.api.getModels();
+    availableModelsCache = models;
+
+    // Clear options
+    modelSelect.innerHTML = "";
+
+    models.forEach((m) => {
+      const option = document.createElement("option");
+      option.value = m.name;
+
+      // Label just shows name in drop down now, details in panel
+      option.textContent = m.name;
+      option.dataset.exists = m.exists;
+      option.dataset.size = m.size;
+
+      if (m.active || m.name === activeModelName) {
+        option.selected = true;
+      }
+
+      modelSelect.appendChild(option);
+    });
+
+    // Initialize Info Panel
+    const currentVal = modelSelect.value;
+    if (currentVal) {
+      updateModelInfoUI(currentVal);
+
+      // Check if current active model exists
+      const currentModel = models.find((m) => m.name === activeModelName);
+      if (currentModel && !currentModel.exists) {
+        log(`⚠️ Modelo '${activeModelName}' não encontrado localmente.`);
+        setStatus("warning", "Modelo não instalado. Baixe para usar.");
+
+        // Ensure UI is visible/ready
+        modelInfoPanel.classList.remove("hidden");
+
+        // Auto-scroll to model section if needed?
+        // For now just ensure the status and buttons are clear.
+      }
+    }
+  } catch (err) {
+    log("Erro ao carregar modelos: " + err.message, "error");
+    modelSelect.innerHTML = "<option>Erro ao carregar</option>";
+  }
+}
+
+function updateModelInfoUI(modelName) {
+  const model = availableModelsCache.find((m) => m.name === modelName);
+  if (!model) return;
+
+  // Show panel
+  modelInfoPanel.classList.remove("hidden");
+
+  // Description
+  modelDescription.textContent = getModelDescription(modelName);
+
+  // Button State
+  const currentConfig = availableModelsCache.find((m) => m.active);
+  const isActive = currentConfig && currentConfig.name === modelName;
+
+  // Icons
+  const downloadIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+  const checkIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+  const currentIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+
+  modelActionText.style.display = "flex";
+  modelActionText.style.alignItems = "center";
+  modelActionText.style.gap = "6px";
+
+  if (isActive) {
+    modelActionBtn.disabled = true;
+    modelActionText.innerHTML = `${currentIcon} Modelo Atual`;
+    modelActionBtn.classList.remove("primary-btn"); // Standard style
+  } else if (model.exists) {
+    modelActionBtn.disabled = false;
+    modelActionText.innerHTML = `${checkIcon} Usar Modelo`;
+  } else {
+    modelActionBtn.disabled = false;
+    const sizeMB =
+      model.size > 0 ? ` (~${(model.size / 1024 / 1024).toFixed(0)} MB)` : "";
+    modelActionText.innerHTML = `${downloadIcon} Baixar${sizeMB}`;
+  }
+}
+
+function lockModelUI() {
+  modelSelect.disabled = true;
+  modelActionBtn.disabled = true;
+  modelBtnSpinner.classList.remove("hidden");
+}
+
+function unlockModelUI() {
+  modelSelect.disabled = false;
+  modelActionBtn.disabled = false;
+  modelBtnSpinner.classList.add("hidden");
+}
+
+async function handleModelAction() {
+  const modelName = modelSelect.value;
+  const model = availableModelsCache.find((m) => m.name === modelName);
+
+  if (!model) return;
+
+  lockModelUI();
+
+  const needsDownload = !model.exists;
+
+  if (needsDownload) {
+    log(`⬇️ Iniciando download do modelo: ${modelName}`);
+    downloadProgressContainer.classList.remove("hidden");
+    downloadProgressBar.style.width = "0%";
+    downloadStatusText.textContent = "Iniciando download...";
+  } else {
+    log(`🔄 Mudando para modelo local: ${modelName}`);
+  }
+
+  try {
+    await window.api.setModel(modelName);
+
+    if (!needsDownload) {
+      // Instant switch success
+      log("✅ Modelo alterado com sucesso.");
+      setStatus("ready", "Modelo atualizado!");
+
+      // Refresh list to update active state
+      await loadModels(modelName);
+      unlockModelUI();
+    }
+    // If download, the progress listener will handle unlock/refresh
+  } catch (err) {
+    log(`❌ Erro: ${err.message}`, "error");
+    setStatus("error", "Falha ao mudar modelo");
+    unlockModelUI();
+    downloadProgressContainer.classList.add("hidden");
+  }
 }
 
 // ============================================================================

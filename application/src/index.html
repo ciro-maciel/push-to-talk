@@ -8,9 +8,12 @@
       content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
     />
     <title>Push to Talk</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -81,29 +84,119 @@
       <div class="controls-suite">
         <div class="control-group">
           <label class="control-label">Atalho</label>
-          <button id="shortcut-trigger" class="shortcut-input-button" title="Clique para alterar">
+          <button
+            id="shortcut-trigger"
+            class="shortcut-input-button"
+            title="Clique para alterar"
+          >
             <div class="shortcut-content">
               <span id="current-keys" class="keys">⌘⇧Space</span>
-              <span id="recording-text" class="recording-text hidden">Gravando...</span>
+              <span id="recording-text" class="recording-text hidden"
+                >Gravando...</span
+              >
             </div>
-            <div id="confirm-shortcut-btn" class="confirm-shortcut-btn hidden" title="Salvar atalho">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <div
+              id="confirm-shortcut-btn"
+              class="confirm-shortcut-btn hidden"
+              title="Salvar atalho"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             </div>
-            <div id="clear-shortcut-btn" class="clear-shortcut-btn hidden" title="Limpar atalho">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <div
+              id="clear-shortcut-btn"
+              class="clear-shortcut-btn hidden"
+              title="Limpar atalho"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </div>
           </button>
         </div>
-        
+
         <div class="divider-vertical"></div>
 
         <div class="control-group">
-           <label class="control-label">Modo</label>
-           <div class="segmented-control">
-             <button class="segment-btn" data-mode="hybrid" title="Toque para alternar, segure para falar">Híbrido</button>
-             <button class="segment-btn" data-mode="toggle" title="Sempre alternar">Alternar</button>
-             <button class="segment-btn" data-mode="hold" title="Sempre segurar para falar">Segurar</button>
-           </div>
+          <label class="control-label">Modo</label>
+          <div class="segmented-control">
+            <button
+              class="segment-btn"
+              data-mode="hybrid"
+              title="Toque para alternar, segure para falar"
+            >
+              Híbrido
+            </button>
+            <button
+              class="segment-btn"
+              data-mode="toggle"
+              title="Sempre alternar"
+            >
+              Alternar
+            </button>
+            <button
+              class="segment-btn"
+              data-mode="hold"
+              title="Sempre segurar para falar"
+            >
+              Segurar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Model Selection Section -->
+      <div class="controls-suite" style="margin-top: 12px;">
+        <div class="control-group full-width">
+            <label class="control-label">Modelo de Transcrição</label>
+            
+            <div class="model-selector-container">
+                <select id="model-select" class="model-select">
+                    <option value="" disabled selected>Carregando modelos...</option>
+                </select>
+            </div>
+
+            <!-- Model Info & Action -->
+            <div id="model-info-panel" class="model-info-panel hidden">
+                <p id="model-description" class="model-description">Descrição do modelo...</p>
+                
+                <div class="model-actions">
+                    <button id="model-action-btn" class="model-action-btn">
+                        <span id="model-action-text">Selecionar</span>
+                        <div id="model-btn-spinner" class="spinner-mini hidden"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Download Progress -->
+            <div id="download-progress-container" class="download-progress-container hidden">
+                <div class="progress-bar-bg">
+                    <div id="download-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+                </div>
+                <p id="download-status-text" class="download-status-text">Baixando modelo...</p>
+            </div>
         </div>
       </div>
 
@@ -115,13 +208,22 @@
         <p class="transcription-label">Última transcrição:</p>
         <p id="transcription-text" class="transcription-text"></p>
         <button id="play-audio-btn" class="play-btn" title="Ouvir gravação">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
           <span>Ouvir áudio</span>
         </button>
       </div>
-
-
-
 
       <div class="logs-wrapper">
         <div class="logs-header" id="logs-header">
@@ -130,7 +232,22 @@
             <span class="label">Logs</span>
           </button>
           <button id="copy-log-btn" class="copy-btn" title="Copiar logs">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              ></path>
+            </svg>
             Copiar
           </button>
         </div>
@@ -138,24 +255,44 @@
           <div id="debug-log-list" class="debug-log-list"></div>
         </div>
       </div>
-      
+
       <div class="footer">
         <a href="https://www.linkedin.com/in/ciromaciel/" class="footer-link">
-          <img src="../assets/ciro-maciel.jpeg" alt="Ciro Cesar Maciel" class="avatar" />
+          <img
+            src="../assets/ciro-maciel.jpeg"
+            alt="Ciro Cesar Maciel"
+            class="avatar"
+          />
           <span>Powered by <strong>Ciro Cesar Maciel</strong></span>
         </a>
-        
+
         <!-- Auto-Launch Toggle (compact with icon) -->
         <label class="auto-launch-switch" title="Iniciar com o sistema">
           <input type="checkbox" id="auto-launch-toggle" />
           <span class="switch-track">
             <span class="switch-thumb">
-              <svg class="icon-off" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                <line x1="12" y1="2" x2="12" y2="12"/>
+              <svg
+                class="icon-off"
+                viewBox="0 0 24 24"
+                width="10"
+                height="10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                <line x1="12" y1="2" x2="12" y2="12" />
               </svg>
-              <svg class="icon-on" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="20 6 9 17 4 12"/>
+              <svg
+                class="icon-on"
+                viewBox="0 0 24 24"
+                width="10"
+                height="10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
           </span>

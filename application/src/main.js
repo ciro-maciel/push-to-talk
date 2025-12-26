@@ -30,6 +30,7 @@ const uiohook = uIOhook;
 import electronUpdater from "electron-updater";
 const { autoUpdater } = electronUpdater;
 import log from "electron-log";
+import { ModelManager } from "./models.js";
 
 // Configure logging
 autoUpdater.logger = log;
@@ -101,6 +102,7 @@ function loadConfig() {
 
 // Will be initialized after app is ready
 let CONFIG = null;
+let modelManager = null;
 
 // ============================================================================
 // PATHS (handles both dev and packaged app)
@@ -125,6 +127,10 @@ function getWhisperBinary() {
 }
 
 function getWhisperModel() {
+  if (modelManager) {
+    return modelManager.getModelPath(CONFIG.model);
+  }
+  // Fallback if manager not ready
   const modelName = `ggml-${CONFIG.model}.bin`;
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "models", modelName);
@@ -323,7 +329,7 @@ function updateTrayIcon(recording) {
 function createWindow() {
   const defaultBounds = {
     width: 420,
-    height: 630,
+    height: 740,
   };
 
   const bounds = store.get("windowBounds", defaultBounds);
@@ -334,7 +340,7 @@ function createWindow() {
     x: bounds.x,
     y: bounds.y,
     minWidth: 420,
-    minHeight: 630,
+    minHeight: 740,
     resizable: true,
     maximizable: false,
     fullscreenable: false,
@@ -1055,13 +1061,65 @@ ipcMain.on("audio-level", (event, level) => {
   }
 });
 
-// Permission handlers
+// Permissions
 ipcMain.handle("check-permissions", async () => {
   return await checkAllPermissions();
 });
 
 ipcMain.handle("open-settings", (event, pane) => {
   openSystemPreferences(pane);
+});
+
+// Models
+ipcMain.handle("get-models", async () => {
+  if (!modelManager) return [];
+
+  // Sort logic: installed first (by size descending), then others alphabetically
+  const models = await modelManager.getModels();
+  models.sort((a, b) => {
+    if (a.exists && !b.exists) return -1;
+    if (!a.exists && b.exists) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Return also which is active
+  return models.map((m) => ({ ...m, active: m.name === CONFIG.model }));
+});
+
+ipcMain.handle("set-model", async (event, modelName) => {
+  log.info(`Request to set model to: ${modelName}`);
+
+  // Check if model exists
+  const models = await modelManager.getModels();
+  const target = models.find((m) => m.name === modelName);
+
+  if (!target) {
+    throw new Error("Model not found in list");
+  }
+
+  // If not exists, download it
+  if (!target.exists) {
+    try {
+      await modelManager.downloadModel(modelName, (progress) => {
+        mainWindow?.webContents.send("model-download-progress", {
+          model: modelName,
+          progress,
+        });
+      });
+    } catch (err) {
+      log.error(`Failed to download model ${modelName}:`, err);
+      throw err;
+    }
+  }
+
+  // Update config
+  CONFIG.model = modelName;
+  store.set("model", modelName);
+  return true;
+});
+
+ipcMain.handle("cancel-download-model", (event, modelName) => {
+  return modelManager.cancelDownload(modelName);
 });
 
 ipcMain.handle("open-external", (event, url) => {
@@ -1127,20 +1185,25 @@ app.whenReady().then(async () => {
   // console.log(`📋 Auto-paste: ${CONFIG.autoPaste}`);
   // console.log(`🔊 Audio device: ${CONFIG.audioDevice}`);
 
-  // Check permissions on startup
-  const permissions = await checkAllPermissions();
+  // Create Tray Icon
+  createTray();
 
-  if (!permissions.microphone) {
+  // Initialize Model Manager before window to handle requests
+  modelManager = new ModelManager(process.resourcesPath);
+
+  // Check permissions on startup (logging only)
+  const perms = await checkAllPermissions();
+  if (!perms.microphone) {
     // console.log("⚠️ Microphone permission not granted!");
   }
-  if (!permissions.accessibility) {
+  if (!perms.accessibility) {
     // console.log("⚠️ Accessibility permission not granted!");
   }
 
-  createWindow();
+  // Create Main Window
+  await createWindow();
 
   // Configure About Panel
-  // Note: On macOS, the About icon comes from the app's .icns file (after build)
   app.setAboutPanelOptions({
     applicationName: "Push to Talk",
     applicationVersion: app.getVersion(),
@@ -1150,8 +1213,8 @@ app.whenReady().then(async () => {
     website: "https://www.linkedin.com/in/ciromaciel/",
   });
 
-  createTray();
-  startUiohook(); // Start the global hook
+  // Start Global Hotkey Hook
+  startUiohook();
 
   // Check for updates
   if (app.isPackaged) {

@@ -33,16 +33,11 @@
       "src/**/*",
       "assets/**/*",
       "whisper.cpp/build/bin/whisper-cli*",
-      "whisper.cpp/models/ggml-base.bin",
       "!whisper.cpp/.git",
       "!whisper.cpp/build/**/*.o",
       "!whisper.cpp/build/**/*.a"
     ],
     "extraResources": [
-      {
-        "from": "whisper.cpp/models/ggml-base.bin",
-        "to": "models/ggml-base.bin"
-      },
       {
         "from": "config.json",
         "to": "config.json"

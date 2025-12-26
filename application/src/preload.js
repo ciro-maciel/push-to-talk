@@ -55,4 +55,13 @@ contextBridge.exposeInMainWorld("api", {
   onStopRecording: (callback) => {
     ipcRenderer.on("stop-recording", () => callback());
   },
+
+  // Models
+  getModels: () => ipcRenderer.invoke("get-models"),
+  setModel: (modelName) => ipcRenderer.invoke("set-model", modelName),
+  cancelDownloadModel: (modelName) =>
+    ipcRenderer.invoke("cancel-download-model", modelName),
+
+  onModelDownloadProgress: (callback) =>
+    ipcRenderer.on("model-download-progress", (event, data) => callback(data)),
 });
