@@ -1147,8 +1147,8 @@ app.whenReady().then(async () => {
   // Note: On macOS, the About icon comes from the app's .icns file (after build)
   app.setAboutPanelOptions({
     applicationName: "Push to Talk",
-    applicationVersion: "1.0.0",
-    version: "1.0.0",
+    applicationVersion: app.getVersion(),
+    version: app.getVersion(),
     copyright: "© 2026 Ciro Cesar Maciel",
     credits: "Transcrição de voz 100% local e privada",
     website: "https://www.linkedin.com/in/ciromaciel/",
