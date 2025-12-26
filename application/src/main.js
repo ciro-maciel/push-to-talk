@@ -291,11 +291,6 @@ function createTray() {
   tray = new Tray(createTrayIcon(false));
   tray.setToolTip("Push to Talk");
   tray.setContextMenu(buildTrayMenu());
-
-  tray.on("click", () => {
-    mainWindow?.show();
-    mainWindow?.focus();
-  });
 }
 
 function updateTrayIcon(recording) {
@@ -1110,6 +1105,21 @@ ipcMain.handle("set-auto-launch", (event, enabled) => {
 // ============================================================================
 // APP LIFECYCLE
 // ============================================================================
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
 
 app.whenReady().then(async () => {
   // Load configuration from config.json
