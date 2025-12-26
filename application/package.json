@@ -1,6 +1,6 @@
 {
   "name": "push-to-talk",
-  "version": "1.12.1",
+  "version": "1.12.2",
   "description": "Transcrição de voz 100% local e privada",
   "repository": {
     "type": "git",
@@ -38,7 +38,6 @@
       "!whisper.cpp/build/**/*.a"
     ],
     "extraResources": [
-
       {
         "from": "whisper.cpp/models/ggml-base.bin",
         "to": "models/ggml-base.bin"
