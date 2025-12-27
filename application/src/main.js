@@ -108,7 +108,6 @@ function loadConfig() {
   };
 
   console.log("MAIN: Store Path:", store.path);
-  console.log("MAIN: Loaded Config from Store:", config);
   log.info("Loaded Config:", config);
   return config;
 }
@@ -408,6 +407,7 @@ function startRecording() {
   isRecording = true;
   updateTrayIcon(true);
   showOverlay();
+  setOverlayMode("recording");
 
   // Tell renderer to start recording
   mainWindow?.webContents.send("start-recording");
@@ -419,7 +419,8 @@ function stopRecording() {
   // console.log("⏹️ Recording stopped.");
   isRecording = false;
   updateTrayIcon(false);
-  hideOverlay();
+  // Do NOT hide overlay yet - switch to transcribing mode
+  setOverlayMode("transcribing");
 
   // Tell renderer to stop recording and send audio
   mainWindow?.webContents.send("stop-recording");
@@ -504,6 +505,12 @@ function hideOverlay() {
   if (overlayWindow) {
     overlayWindow.close();
     overlayWindow = null;
+  }
+}
+
+function setOverlayMode(mode) {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send("set-mode", mode);
   }
 }
 
@@ -771,6 +778,9 @@ async function handleRecordingComplete() {
       error: true,
     });
   }
+
+  // Hide overlay after everything is done
+  hideOverlay();
 
   setTimeout(() => {
     mainWindow?.webContents.send("status", {

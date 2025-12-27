@@ -89,16 +89,45 @@
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.6; transform: scale(0.85); }
     }
+    /* Loading dots */
+    .loading-container {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
   </style>
 </head>
 <body>
-  <div class="visualizer-container">
+  <div class="visualizer-container" id="visualizer">
     <div class="rec-dot"></div>
     <div class="bar idle" id="bar1"></div>
     <div class="bar idle" id="bar2"></div>
     <div class="bar idle" id="bar3"></div>
     <div class="bar idle" id="bar4"></div>
     <div class="bar idle" id="bar5"></div>
+  </div>
+
+  <div class="visualizer-container loading-container" id="loading">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
   </div>
 
   <script>
@@ -109,6 +138,8 @@
       document.getElementById('bar4'),
       document.getElementById('bar5')
     ];
+    const visualizerEl = document.getElementById('visualizer');
+    const loadingEl = document.getElementById('loading');
 
     // Color palette matching the app
     const colors = {
@@ -117,6 +148,18 @@
       high: '#10b981',     // success (green)
       peak: '#ef4444'      // recording (red)
     };
+
+    // Mode switching
+    window.overlayApi.onSetMode((mode) => {
+       if (mode === 'transcribing') {
+         visualizerEl.style.display = 'none';
+         loadingEl.style.display = 'flex';
+       } else {
+         // Default to recording
+         visualizerEl.style.display = 'flex';
+         loadingEl.style.display = 'none';
+       }
+    });
 
     // Listen for audio levels from main process
     window.overlayApi.onAudioLevel((level) => {
