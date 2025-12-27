@@ -24,6 +24,10 @@ contextBridge.exposeInMainWorld("api", {
   setPreHeatMicrophone: (enabled) =>
     ipcRenderer.invoke("set-pre-heat-microphone", enabled),
 
+  // Microphone selection
+  getMicrophoneConfig: () => ipcRenderer.invoke("get-microphone-config"),
+  setMicrophone: (deviceId) => ipcRenderer.invoke("set-microphone", deviceId),
+
   // Permission management
   checkPermissions: () => ipcRenderer.invoke("check-permissions"),
   openSettings: (pane) => ipcRenderer.invoke("open-settings", pane),

@@ -9,6 +9,7 @@ import {
   startAudioRecording,
   stopAudioRecording,
   setLogCallback,
+  getAvailableMicrophones,
 } from "./renderer/audio.js";
 
 import {
@@ -54,6 +55,7 @@ const stepMic = document.getElementById("step-mic");
 const stepAccessibility = document.getElementById("step-accessibility");
 const autoLaunchToggle = document.getElementById("auto-launch-toggle");
 const preHeatToggle = document.getElementById("pre-heat-toggle");
+const microphoneSelect = document.getElementById("microphone-select");
 const modelSelect = document.getElementById("model-select");
 const modelInfoPanel = document.getElementById("model-info-panel");
 const modelDescription = document.getElementById("model-description");
@@ -102,8 +104,11 @@ async function init() {
   );
 
   if (permissions.microphone && config.preHeatMicrophone !== false) {
-    await warmUpMicrophone();
+    await warmUpMicrophone(config.selectedMicrophone);
   }
+
+  // Load microphones list
+  await loadMicrophones(config.selectedMicrophone);
 
   currentHotkey = config.hotkey;
   updateHotkeyDisplay(
@@ -150,7 +155,8 @@ async function init() {
       if (success) {
         if (enabled) {
           log("🔥 Pré-aquecimento ativado. Ligando microfone...");
-          await warmUpMicrophone();
+          const savedMic = await window.api.getMicrophoneConfig();
+          await warmUpMicrophone(savedMic);
         } else {
           log("❄️ Pré-aquecimento desativado. Microfone desligado.");
           await stopMicrophone();
@@ -158,6 +164,27 @@ async function init() {
       } else {
         preHeatToggle.checked = !enabled;
         log("❌ Falha ao salvar configuração", "error");
+      }
+    });
+  }
+
+  // Microphone selection handler
+  if (microphoneSelect) {
+    microphoneSelect.addEventListener("change", async (e) => {
+      const deviceId = e.target.value;
+      const success = await window.api.setMicrophone(deviceId);
+
+      if (success) {
+        const selectedLabel = e.target.selectedOptions[0]?.text || deviceId;
+        log(`🎤 Microfone alterado: ${selectedLabel}`);
+
+        // Restart microphone if pre-heat is enabled
+        if (preHeatToggle && preHeatToggle.checked) {
+          await stopMicrophone();
+          await warmUpMicrophone(deviceId);
+        }
+      } else {
+        log("❌ Falha ao salvar microfone", "error");
       }
     });
   }
@@ -197,6 +224,50 @@ async function init() {
 
   if (loadingScreen) {
     loadingScreen.classList.add("hidden");
+  }
+}
+
+// ============================================================================
+// MICROPHONES
+// ============================================================================
+
+async function loadMicrophones(savedDeviceId = null) {
+  if (!microphoneSelect) return;
+
+  try {
+    const mics = await getAvailableMicrophones();
+
+    microphoneSelect.innerHTML = "";
+
+    if (mics.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Nenhum microfone encontrado";
+      option.disabled = true;
+      microphoneSelect.appendChild(option);
+      return;
+    }
+
+    mics.forEach((mic) => {
+      const option = document.createElement("option");
+      option.value = mic.deviceId;
+      option.textContent = mic.label;
+
+      if (savedDeviceId && mic.deviceId === savedDeviceId) {
+        option.selected = true;
+      }
+
+      microphoneSelect.appendChild(option);
+    });
+
+    // If no saved preference, select first available
+    if (!savedDeviceId && mics.length > 0) {
+      microphoneSelect.value = mics[0].deviceId;
+    }
+
+    log(`🎤 ${mics.length} microfone(s) encontrado(s)`);
+  } catch (err) {
+    log("❌ Erro ao carregar microfones: " + err.message, "error");
   }
 }
 

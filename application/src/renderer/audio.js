@@ -35,7 +35,20 @@ function log(msg, type = null) {
 // MICROPHONE WARMUP (Pre-heat for instant recording)
 // ============================================================================
 
-export async function warmUpMicrophone() {
+/**
+ * Get list of available audio input devices
+ */
+export async function getAvailableMicrophones() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  return devices
+    .filter((d) => d.kind === "audioinput")
+    .map((d) => ({
+      deviceId: d.deviceId,
+      label: d.label || `Microfone ${d.deviceId.slice(0, 8)}`,
+    }));
+}
+
+export async function warmUpMicrophone(preferredDeviceId = null) {
   if (
     audioContext &&
     audioContext.state === "running" &&
@@ -49,14 +62,23 @@ export async function warmUpMicrophone() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioInputs = devices.filter((d) => d.kind === "audioinput");
 
-    let selectedDeviceId = "default";
-    const specificMic = audioInputs.find(
-      (d) => d.deviceId !== "default" && d.deviceId !== "communications"
-    );
+    let selectedDeviceId = preferredDeviceId || "default";
 
-    if (specificMic) {
-      selectedDeviceId = specificMic.deviceId;
-      log(`🎯 Microfone selecionado: ${specificMic.label}`);
+    // If no preference, find a specific mic (not default/communications)
+    if (!preferredDeviceId) {
+      const specificMic = audioInputs.find(
+        (d) => d.deviceId !== "default" && d.deviceId !== "communications"
+      );
+      if (specificMic) {
+        selectedDeviceId = specificMic.deviceId;
+      }
+    }
+
+    const selectedMic = audioInputs.find(
+      (d) => d.deviceId === selectedDeviceId
+    );
+    if (selectedMic) {
+      log(`🎯 Microfone selecionado: ${selectedMic.label}`);
     }
 
     warmStream = await navigator.mediaDevices.getUserMedia({

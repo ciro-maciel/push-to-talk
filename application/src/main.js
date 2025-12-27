@@ -167,6 +167,22 @@ ipcMain.handle("set-pre-heat-microphone", async (event, enabled) => {
   }
 });
 
+ipcMain.handle("get-microphone-config", () => {
+  return store.get("selectedMicrophone", null);
+});
+
+ipcMain.handle("set-microphone", async (event, deviceId) => {
+  try {
+    CONFIG.selectedMicrophone = deviceId;
+    store.set("selectedMicrophone", deviceId);
+    log.info(`Storage: Microphone set to: ${deviceId}`);
+    return true;
+  } catch (e) {
+    log.error("Failed to set microphone:", e);
+    return false;
+  }
+});
+
 ipcMain.on("audio-level", (event, level) => {
   const overlayWindow = getOverlayWindow();
   if (overlayWindow && !overlayWindow.isDestroyed()) {

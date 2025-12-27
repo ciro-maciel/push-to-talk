@@ -72,6 +72,7 @@ export function loadConfig() {
     model: store.get("model", "tiny"),
     audioDevice: store.get("audioDevice", "default"),
     preHeatMicrophone: store.get("preHeatMicrophone"),
+    selectedMicrophone: store.get("selectedMicrophone", null),
     audioFile: path.join(app.getPath("temp"), "recording.wav"),
     audio: {
       rate: 16000,

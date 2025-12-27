@@ -167,18 +167,34 @@
         </div>
       </div>
 
-      <!-- New Model Selection Section -->
+      <!-- Audio Settings Section (Model + Microphone) -->
       <div class="controls-suite" style="margin-top: 12px;">
-        <div class="control-group full-width">
-            <label class="control-label">Modelo de Transcrição</label>
-            
+        <!-- Microphone Selection -->
+        <div class="control-group" style="flex: 1;">
+            <label class="control-label">Microfone</label>
             <div class="model-selector-container">
-                <select id="model-select" class="model-select">
-                    <option value="" disabled selected>Carregando modelos...</option>
+                <select id="microphone-select" class="model-select">
+                    <option value="" disabled selected>Carregando...</option>
                 </select>
             </div>
+        </div>
 
-            <!-- Model Info & Action -->
+        <div class="divider-vertical"></div>
+
+        <!-- Model Selection -->
+        <div class="control-group" style="flex: 1;">
+            <label class="control-label">Modelo</label>
+            <div class="model-selector-container">
+                <select id="model-select" class="model-select">
+                    <option value="" disabled selected>Carregando...</option>
+                </select>
+            </div>
+        </div>
+      </div>
+
+      <!-- Model Info Panel (separate row) -->
+      <div class="controls-suite" style="margin-top: 8px;">
+        <div class="control-group full-width">
             <div id="model-info-panel" class="model-info-panel hidden">
                 <p id="model-description" class="model-description">Descrição do modelo...</p>
                 
