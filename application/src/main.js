@@ -273,32 +273,36 @@ function buildTrayMenu() {
     },
     { type: "separator" },
     {
-      label: "Abrir Configurações",
+      label: "Configurações",
       accelerator: "CmdOrCtrl+,",
       click: () => {
         mainWindow?.show();
         mainWindow?.focus();
       },
     },
+    { type: "separator" },
     // {
-    //   label: `Iniciar Gravação   ${hotkeyDisplay}`,
+    //   label: `Modo de Visibilidade`,
     //   enabled: !isRecording,
     //   click: () => {
-    //     if (!isRecording) {
-    //       startRecording();
-    //     }
+    //     CONFIG.visibility = !CONFIG.visibility;
     //   },
     // },
-    { type: "separator" },
     {
-      label: "Sobre Push to Talk",
+      label: "Ver atualizações",
+      click: () => {
+        // app.showAboutPanel();
+      },
+    },
+    {
+      label: "Sobre",
       click: () => {
         app.showAboutPanel();
       },
     },
     { type: "separator" },
     {
-      label: "Sair",
+      label: "Fechar Push to Talk",
       // accelerator: "CmdOrCtrl+Q", // Disabled to prevent global shortcut from triggering quit directly
       click: () => {
         isExplicitQuit = true;
