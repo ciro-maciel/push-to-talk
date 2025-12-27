@@ -28,6 +28,7 @@ const btnCheckPermissions = document.getElementById("btn-check-permissions");
 const stepMic = document.getElementById("step-mic");
 const stepAccessibility = document.getElementById("step-accessibility");
 const autoLaunchToggle = document.getElementById("auto-launch-toggle");
+const preHeatToggle = document.getElementById("pre-heat-toggle");
 const modelSelect = document.getElementById("model-select");
 const modelInfoPanel = document.getElementById("model-info-panel");
 const modelDescription = document.getElementById("model-description");
@@ -73,14 +74,17 @@ function getModelDescription(name) {
 async function init() {
   const loadingScreen = document.getElementById("loading-screen");
 
+  const config = await window.api.getConfig();
+  console.log("Renderer: Received config:", config);
+  console.log("Renderer: preHeatMicrophone =", config.preHeatMicrophone);
+
   const permissions = await checkAndShowPermissions();
 
-  // Warm up microphone for instant recording (if permissions granted)
-  if (permissions.microphone) {
+  // Warm up microphone for instant recording (if permissions granted AND enabled)
+  if (permissions.microphone && config.preHeatMicrophone !== false) {
     await warmUpMicrophone();
   }
 
-  const config = await window.api.getConfig();
   currentHotkey = config.hotkey;
   updateHotkeyDisplay(config.hotkey);
 
@@ -112,6 +116,32 @@ async function init() {
         log("❌ Falha ao configurar inicialização automática", "error");
         // Revert toggle on failure
         autoLaunchToggle.checked = !enabled;
+      }
+    });
+  }
+
+  // Initialize Pre-Heat Toggle
+  if (preHeatToggle) {
+    // Default to true if undefined, matching main process default
+    const preHeatEnabled = config.preHeatMicrophone !== false;
+    preHeatToggle.checked = preHeatEnabled;
+
+    preHeatToggle.addEventListener("change", async (e) => {
+      const enabled = e.target.checked;
+      const success = await window.api.setPreHeatMicrophone(enabled);
+
+      if (success) {
+        if (enabled) {
+          log("🔥 Pré-aquecimento ativado. Ligando microfone...");
+          await warmUpMicrophone();
+        } else {
+          log("❄️ Pré-aquecimento desativado. Microfone desligado.");
+          await stopMicrophone();
+        }
+      } else {
+        // Revert on failure
+        preHeatToggle.checked = !enabled;
+        log("❌ Falha ao salvar configuração", "error");
       }
     });
   }
@@ -491,6 +521,15 @@ let gainNode = null;
 
 // Initialize microphone once at startup (warm it up)
 async function warmUpMicrophone() {
+  if (
+    audioContext &&
+    audioContext.state === "running" &&
+    warmStream &&
+    warmStream.active
+  ) {
+    return true; // Already warm
+  }
+
   try {
     // List devices first to pick a specific one (avoiding 'default' which can be buggy)
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -599,6 +638,28 @@ async function warmUpMicrophone() {
   }
 }
 
+async function stopMicrophone() {
+  try {
+    if (warmStream) {
+      warmStream.getTracks().forEach((track) => track.stop());
+      warmStream = null;
+    }
+
+    if (audioContext && audioContext.state !== "closed") {
+      await audioContext.close();
+    }
+    // Re-create context on next warmup
+    audioContext = null;
+    mediaStreamSource = null;
+    scriptProcessor = null;
+
+    return true;
+  } catch (err) {
+    console.error("Failed to stop microphone:", err);
+    return false;
+  }
+}
+
 // Start recording - now instant because mic is already warm
 async function startAudioRecording() {
   // If not warmed up yet, do it now (fallback)
@@ -666,6 +727,13 @@ async function stopAudioRecording() {
 
     // Keep context warm for next recording (don't close it)
     audioBuffers = [];
+
+    // CP: Check config to see if we should cool down
+    // We need to fetch fresh config or check toggle state
+    // Since we are in renderer, we can check toggle directly
+    if (preHeatToggle && !preHeatToggle.checked) {
+      await stopMicrophone();
+    }
 
     resolve(wavBuffer);
   });

@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld("api", {
   setRecordingHotkey: (isRecording) =>
     ipcRenderer.invoke("set-recording-hotkey", isRecording),
   setTriggerMode: (mode) => ipcRenderer.invoke("set-trigger-mode", mode),
+  setPreHeatMicrophone: (enabled) =>
+    ipcRenderer.invoke("set-pre-heat-microphone", enabled),
 
   // Permission management
   checkPermissions: () => ipcRenderer.invoke("check-permissions"),

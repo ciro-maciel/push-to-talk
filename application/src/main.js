@@ -71,6 +71,8 @@ function loadConfig() {
         if (userConfig.model) store.set("model", userConfig.model);
         if (userConfig.audioDevice)
           store.set("audioDevice", userConfig.audioDevice);
+        if (userConfig.preHeatMicrophone !== undefined)
+          store.set("preHeatMicrophone", userConfig.preHeatMicrophone);
 
         store.set("migrated_from_json", true);
         log.info("Migration from config.json complete");
@@ -80,9 +82,14 @@ function loadConfig() {
     }
   }
 
-  return {
+  // Ensure defaults exist in store
+  if (!store.has("preHeatMicrophone")) {
+    store.set("preHeatMicrophone", true);
+  }
+
+  const config = {
     hotkey: store.get("hotkey", "CommandOrControl+Shift+Space"),
-    triggerMode: store.get("triggerMode", "hybrid"), // hybrid, toggle, hold
+    triggerMode: store.get("triggerMode", "hybrid"),
     language: store.get("language", "pt"),
     prompt: store.get(
       "prompt",
@@ -91,6 +98,7 @@ function loadConfig() {
     autoPaste: store.get("autoPaste", true),
     model: store.get("model", "tiny"),
     audioDevice: store.get("audioDevice", "default"),
+    preHeatMicrophone: store.get("preHeatMicrophone"), // Verified to exist above
     audioFile: path.join(app.getPath("temp"), "recording.wav"),
     audio: {
       rate: 16000,
@@ -98,6 +106,11 @@ function loadConfig() {
       bits: 16,
     },
   };
+
+  console.log("MAIN: Store Path:", store.path);
+  console.log("MAIN: Loaded Config from Store:", config);
+  log.info("Loaded Config:", config);
+  return config;
 }
 
 // Will be initialized after app is ready
@@ -961,12 +974,7 @@ function registerHotkey() {
 // ============================================================================
 
 ipcMain.handle("get-config", () => {
-  return {
-    hotkey: CONFIG.hotkey,
-    triggerMode: CONFIG.triggerMode,
-    autoPaste: CONFIG.autoPaste,
-    language: CONFIG.language,
-  };
+  return CONFIG;
 });
 
 // Handle audio data from renderer and transcribe
@@ -1054,6 +1062,19 @@ ipcMain.handle("set-trigger-mode", async (event, mode) => {
     return true;
   } catch (e) {
     log.error("Failed to set trigger mode:", e);
+    return false;
+  }
+});
+
+// Set pre-heat microphone
+ipcMain.handle("set-pre-heat-microphone", async (event, enabled) => {
+  try {
+    CONFIG.preHeatMicrophone = enabled;
+    store.set("preHeatMicrophone", enabled);
+    log.info(`Storage: Pre-heat Microphone set to: ${enabled}`);
+    return true;
+  } catch (e) {
+    log.error("Failed to set pre-heat microphone:", e);
     return false;
   }
 });
