@@ -645,36 +645,34 @@ async function transcribe() {
 // ============================================================================
 
 /**
- * Types text directly into the active text field without using clipboard.
- * This inserts the text character by character using system automation.
+ * Types text directly into the active text field.
+ * uses Clipboard + Paste (Cmd+V) for better compatibility with accents/emojis.
  */
 function typeText(text) {
   return new Promise((resolve) => {
     if (process.platform === "darwin") {
-      // macOS: Use AppleScript to type text directly
-      // Escape special characters for AppleScript
-      const escapedText = text
-        .replace(/\\/g, "\\\\") // Escape backslashes first
-        .replace(/"/g, '\\"') // Escape double quotes
-        .replace(/\n/g, '" & return & "'); // Handle newlines
+      // macOS: Use Clipboard + Cmd+V to avoid character encoding issues
+      const originalClipboard = clipboard.readText();
+      clipboard.writeText(text);
 
       const script = `
         tell application "System Events"
-          keystroke "${escapedText}"
+          keystroke "v" using command down
         end tell
       `;
+
       exec(`osascript -e '${script}'`, (error) => {
         if (error) {
-          console.error("Failed to type text:", error.message);
-          // Fallback: try clipboard method
-          clipboard.writeText(text);
-          exec(
-            `osascript -e 'tell application "System Events" to keystroke "v" using command down'`,
-            resolve
-          );
-        } else {
-          resolve();
+          console.error("Failed to paste text:", error.message);
         }
+
+        // Restore clipboard after a short delay to ensure paste completes
+        setTimeout(() => {
+          if (originalClipboard) {
+            clipboard.writeText(originalClipboard);
+          }
+          resolve();
+        }, 200);
       });
     } else if (process.platform === "win32") {
       // Windows: Use PowerShell to type text
