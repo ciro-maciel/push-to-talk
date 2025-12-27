@@ -63,6 +63,59 @@ log.info("App starting...");
 let CONFIG = null;
 let modelManager = null;
 
+/**
+ * Validates that the selected model exists on disk.
+ * Falls back to any available model, or defaults to "tiny" if none exist.
+ */
+async function validateSelectedModel() {
+  if (!modelManager) return;
+
+  const models = await modelManager.getModels();
+  const selected = models.find((m) => m.name === CONFIG.model);
+
+  if (selected && selected.exists) {
+    log.info(`Model "${CONFIG.model}" validated successfully`);
+    return;
+  }
+
+  log.warn(`Selected model "${CONFIG.model}" not found on disk`);
+
+  // Try to find any available model
+  const available = models.find((m) => m.exists);
+  if (available) {
+    log.info(`Falling back to available model: "${available.name}"`);
+    CONFIG.model = available.name;
+    store.set("model", available.name);
+    return;
+  }
+
+  // No models exist, reset to default "tiny" and alert user
+  log.warn("No models found on disk. Please download a model.");
+  CONFIG.model = "tiny";
+  store.set("model", "tiny");
+
+  // Show alert to user
+  const result = await dialog.showMessageBox({
+    type: "warning",
+    title: "Modelo Não Encontrado",
+    message: "Nenhum modelo de transcrição encontrado",
+    detail:
+      "Para usar o Push to Talk, você precisa baixar um modelo. Deseja abrir as configurações para baixar agora?",
+    buttons: ["Baixar Modelo", "Depois"],
+    defaultId: 0,
+    cancelId: 1,
+  });
+
+  if (result.response === 0) {
+    // User clicked "Baixar Modelo" - show the config window
+    const mainWindow = getMainWindow();
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  }
+}
+
 // ============================================================================
 // IPC HANDLERS
 // ============================================================================
@@ -293,6 +346,9 @@ app.whenReady().then(async () => {
   createTray(CONFIG);
 
   modelManager = new ModelManager(process.resourcesPath);
+
+  // Validate that the selected model exists, fallback if not
+  await validateSelectedModel();
 
   const perms = await checkAllPermissions();
   if (!perms.microphone) {
