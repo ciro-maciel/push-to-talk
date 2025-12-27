@@ -108,7 +108,6 @@ function loadConfig() {
   };
 
   console.log("MAIN: Store Path:", store.path);
-  log.info("Loaded Config:", config);
   return config;
 }
 
@@ -647,6 +646,44 @@ async function transcribe() {
   });
 }
 
+function calculateRMS(buffer) {
+  // WAV files have a 44-byte header. Skip it to read only audio samples.
+  const WAV_HEADER_SIZE = 44;
+
+  // Convert Uint8Array (bytes) to Int16Array (samples)
+  // We assume 16-bit audio (2 bytes per sample)
+  const audioDataStart = WAV_HEADER_SIZE;
+  const audioDataLength = buffer.length - WAV_HEADER_SIZE;
+
+  if (audioDataLength <= 0) {
+    return 0; // No audio data
+  }
+
+  const numSamples = Math.floor(audioDataLength / 2);
+  const samples = new Int16Array(numSamples);
+
+  for (let i = 0; i < numSamples; i++) {
+    // Little-endian conversion: byte[0] + (byte[1] << 8)
+    const byteIndex = audioDataStart + i * 2;
+    const byte1 = buffer[byteIndex];
+    const byte2 = buffer[byteIndex + 1];
+    // Use DataView or manual shift for correct signed 16-bit integer
+    const val = byte1 | (byte2 << 8);
+    // Handle the signed bit (if 16th bit is 1, it's negative)
+    samples[i] = val >= 0x8000 ? val - 0x10000 : val;
+  }
+
+  let sumSquares = 0;
+  for (let i = 0; i < numSamples; i++) {
+    sumSquares += samples[i] * samples[i];
+  }
+
+  // Mean Square
+  const meanSquare = sumSquares / numSamples;
+  // Root Mean Square
+  return Math.sqrt(meanSquare);
+}
+
 // ============================================================================
 // DIRECT TEXT INSERTION (no clipboard)
 // ============================================================================
@@ -739,6 +776,10 @@ async function handleRecordingComplete() {
       "(music)",
       "[silence]",
       "[silêncio]",
+      "música",
+      "music",
+      "sous-titres",
+      "subtitle",
       "...",
     ];
 
@@ -748,11 +789,9 @@ async function handleRecordingComplete() {
 
     if (isNoise) {
       logToRenderer(`⚠️ Ruído ignorado: "${text}"`);
-      mainWindow?.webContents.send("transcription", {
-        text: "Não consegui ouvir. Tente novamente.",
-        isNoise: true,
-      });
+      hideOverlay();
       // Do NOT copy to clipboard or show system notification
+      // Do NOT send error text to renderer
     } else {
       // Valid transcription
       // console.log("📝 Transcription:", text);
@@ -990,6 +1029,27 @@ ipcMain.handle("transcribe-audio", async (event, audioDataArray) => {
   logToRenderer(
     `📥 Recebido áudio do renderer: ${audioDataArray.length} bytes`
   );
+
+  if (audioDataArray.length < 1000) {
+    logToRenderer("⚠️ Áudio muito curto/vazio (zero). Cancelando.");
+    hideOverlay();
+    return false;
+  }
+
+  // Calculate RMS (Root Mean Square) to detect silence
+  const rms = calculateRMS(audioDataArray);
+  logToRenderer(`📊 Energia do áudio (RMS): ${rms.toFixed(2)}`);
+
+  // Threshold for silence - 1500 is aggressive enough to filter typical room noise
+  const SILENCE_THRESHOLD = 1500;
+
+  if (rms < SILENCE_THRESHOLD) {
+    logToRenderer(
+      `⚠️ Silêncio detectado (RMS < ${SILENCE_THRESHOLD}). Abortando.`
+    );
+    hideOverlay();
+    return false;
+  }
 
   try {
     // Convert array back to buffer
